@@ -1,0 +1,35 @@
+# Ignorar arquivos e diretórios desnecessários
+
+# Diretório do Maven Wrapper
+auth-service/.mvn/
+auth-service/mvnw
+auth-service/mvnw.cmd
+
+# Diretórios de build
+target/
+build/
+
+# Arquivos de configuração específicos da IDE
+.vscode/
+.classpath
+.project
+.settings/
+.springBeans
+.apt_generated
+.factorypath
+
+# Arquivos temporários e logs
+*.log
+*.tmp
+*.swp
+*.class
+*.jar
+*.war
+*.ear
+
+# Arquivos do sistema operacional
+.DS_Store
+Thumbs.db
+
+# Arquivos de ajuda
+HELP.md
