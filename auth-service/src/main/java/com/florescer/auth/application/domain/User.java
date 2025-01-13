@@ -17,8 +17,8 @@ import jakarta.validation.constraints.Email;
 import lombok.Data;
 
 @Entity
-@Data
 @Table(name = "tb_users")
+@Data
 public class User {
 	
 	@Id
