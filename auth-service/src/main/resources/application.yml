@@ -18,6 +18,11 @@ spring:
     init:
       mode: always
 
+# PRIVATE KEY ADDRESS
+jwt:
+ private-key: ${RSA_PRIVATE_KEY}
+ public-key: ${RSA_PUBLIC_KEY}
+
 # SETTING THE SWAGGER ADDRESS  
 springdoc:
   swagger-ui:
