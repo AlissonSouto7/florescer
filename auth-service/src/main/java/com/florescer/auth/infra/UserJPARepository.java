@@ -5,7 +5,7 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.florescer.auth.application.domain.User;
+import com.florescer.auth.domain.User;
 
 @Repository
 public interface UserJPARepository extends JpaRepository<User, UUID> {

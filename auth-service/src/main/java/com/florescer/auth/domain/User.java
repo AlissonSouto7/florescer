@@ -1,4 +1,4 @@
-package com.florescer.auth.application.domain;
+package com.florescer.auth.domain;
 
 import java.util.Set;
 import java.util.UUID;
@@ -14,6 +14,8 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Entity
@@ -25,13 +27,16 @@ public class User {
 	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID userId;
 	
+	@NotBlank
 	private String name;
 	
 	@Email
 	private String email;
 	
+	@NotBlank
 	private String password;
-	
+
+	@NotNull
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinTable(
             name = "tb_users_roles",
@@ -39,5 +44,4 @@ public class User {
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
 	private Set<Role> roles; 
-    
 } 
