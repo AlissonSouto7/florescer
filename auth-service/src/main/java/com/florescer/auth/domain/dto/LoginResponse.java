@@ -1,3 +1,3 @@
 package com.florescer.auth.domain.dto;
 
-public record LoginResponse(String token) {}
+public record LoginResponse(String accessToken) {}
