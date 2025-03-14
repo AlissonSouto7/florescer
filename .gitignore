@@ -7,3 +7,4 @@ mvnw
 mvnw.cmd
 src/main/resources/chaves/
 target/
+.gitignore
