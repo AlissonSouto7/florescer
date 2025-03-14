@@ -1,9 +1,9 @@
 .classpath
 .factorypath
+.mvn/
 .project
 .settings/
-target/
-chaves/
-.mvn/
 mvnw
 mvnw.cmd
+src/main/resources/chaves/
+target/
