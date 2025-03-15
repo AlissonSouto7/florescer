@@ -1,10 +1,1 @@
-.classpath
-.factorypath
-.mvn/
-.project
-.settings/
-mvnw
-mvnw.cmd
-src/main/resources/chaves/
-target/
-.gitignore
+

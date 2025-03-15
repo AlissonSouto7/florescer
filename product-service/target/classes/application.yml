@@ -1,0 +1,20 @@
+server:
+  port: 8081
+  
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/dbproduct
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  
+# SETTING THE SWAGGER ADDRESS  
+springdoc:
+ swagger-ui:
+  path: /swagger
