@@ -1,3 +1,3 @@
 package com.florescer.auth.exception;
 
-public record ApiErrorResponse(String error, String details) {}
+public record ApiErrorResponse(String error, Object details) {}

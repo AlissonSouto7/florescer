@@ -12,26 +12,26 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import com.florescer.product.domain.dto.ProductRequest;
 import com.florescer.product.domain.dto.ProductCreateResponse;
-import com.florescer.product.domain.dto.ProductDtoResponse;
+import com.florescer.product.domain.dto.ProductGetResponse;
 import com.florescer.product.domain.dto.ProductGetAllResponse;
-import com.florescer.product.domain.dto.ProductPutRequest;
+import com.florescer.product.domain.dto.ProductPatchRequest;
+import com.florescer.product.domain.dto.ProductCreateRequest;
 
 @RequestMapping("/v1/product")
 public interface ProductController {
 	
 	@PostMapping("/create")
-	public ResponseEntity<ProductCreateResponse> createProduct(@RequestBody ProductRequest request);
+	public ResponseEntity<ProductCreateResponse> createProduct(@RequestBody ProductCreateRequest request);
 	
 	@GetMapping("/")
 	public ResponseEntity<List<ProductGetAllResponse>> getAllProduct();
 	
 	@GetMapping("/{productId}")
-	public ResponseEntity<ProductDtoResponse> getProductById(@PathVariable UUID productId);
+	public ResponseEntity<ProductGetResponse> getProductById(@PathVariable UUID productId);
 	
-	@PutMapping("/put/{productId}")
-	public ResponseEntity<Void> putProduct(@PathVariable UUID productId, @RequestBody ProductPutRequest request);
+	@PutMapping("/patch/{productId}")
+	public ResponseEntity<Void> patchProduct(@PathVariable UUID productId, @RequestBody ProductPatchRequest request);
 	
 	@DeleteMapping("/delete/{productId}")
 	public ResponseEntity<Void> deleteProduct(@PathVariable UUID productId);

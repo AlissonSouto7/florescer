@@ -1,9 +1,10 @@
 package com.florescer.product.domain.entity;
 
+import java.util.Optional;
 import java.util.UUID;
 
-import com.florescer.product.domain.dto.ProductPutRequest;
-import com.florescer.product.domain.dto.ProductRequest;
+import com.florescer.product.domain.dto.ProductPatchRequest;
+import com.florescer.product.domain.dto.ProductCreateRequest;
 import com.florescer.product.domain.enums.Status;
 
 import jakarta.persistence.Entity;
@@ -21,26 +22,25 @@ public class Product {
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID productId;
-	
+
 	private String name;
-	
+
 	private String type;
-	
+
 	private String description;
-	
+
 	private Double price;
-	
+
 	private Integer quantityStock;
-	
+
 	private String careRequirements;
-	
+
 	private Boolean availability;
-	
+
 	@Enumerated(EnumType.STRING)
 	private Status status;
-	
-	
-	public Product(ProductRequest request) {
+
+	public Product(ProductCreateRequest request) {
 		this.name = request.name();
 		this.type = request.type();
 		this.description = request.description();
@@ -51,14 +51,14 @@ public class Product {
 		this.status = request.status();
 	}
 
-
-	public void update(ProductPutRequest request) {
-		if (request.name() != null) this.name = request.name();
-        if (request.type() != null) this.type = request.type();
-        if (request.description() != null) this.description = request.description();
-        if (request.price() != null) this.price = request.price();
-        if (request.careRequirements() != null) this.careRequirements = request.careRequirements();
-        if (request.availability() != null) this.availability = request.availability();
-        if (request.status() != null) this.status = request.status();
+	public void update(ProductPatchRequest request) {
+	    Optional.ofNullable(request.name()).ifPresent(value -> this.name = value);
+	    Optional.ofNullable(request.type()).ifPresent(value -> this.type = value);
+	    Optional.ofNullable(request.description()).ifPresent(value -> this.description = value);
+	    Optional.ofNullable(request.price()).ifPresent(value -> this.price = value);
+	    Optional.ofNullable(request.quantityStock()).ifPresent(value -> this.quantityStock = value);
+	    Optional.ofNullable(request.careRequirements()).ifPresent(value -> this.careRequirements = value);
+	    Optional.ofNullable(request.availability()).ifPresent(value -> this.availability = value);
+	    Optional.ofNullable(request.status()).ifPresent(value -> this.status = value);
 	}
 }

@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-public record ProductRequest(
+public record ProductCreateRequest(
 		@NotBlank
 		@Size(max = 255, message = "Nome não pode ultrapassar 255 caracteres")
 		String name, 
