@@ -1,8 +1,9 @@
 package com.florescer.product.application.service;
 
-import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
 
@@ -58,23 +59,16 @@ public class ProductServiceImpl implements ProductService {
 
 	@Override
 	public void deleteProduct(UUID productId) {
-		Product product = repository.findById(productId)
-				.orElseThrow(() -> new ProductNotFoundException(productId));
+		Product product = repository.findById(productId).orElseThrow(() -> new ProductNotFoundException(productId));
 
 		repository.delete(product);
 	}
-	
+
 	private void checkIfThereWasUpdate(ProductPatchRequest request) {
-		
-		boolean isEmpty = Arrays.stream(ProductPatchRequest.class.getDeclaredMethods())
-	            .filter(method -> method.getName().startsWith("get") || method.getName().startsWith("is"))
-	            .allMatch(method -> {
-	                try {
-	                    return method.invoke(request) == null;
-	                } catch (Exception e) {
-	                    return false;
-	                }
-	            });
+		boolean isEmpty = Stream.of(request.name(), request.type(), request.description(), request.price(),
+				request.quantityStock(), request.careRequirements(), request.availability(), request.status())
+				.allMatch(Objects::isNull);
+
 		if (isEmpty) {
 			throw new IllegalArgumentException("Nenhum campo foi enviado para atualização.");
 		}
