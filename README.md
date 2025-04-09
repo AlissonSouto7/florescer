@@ -51,3 +51,71 @@ cd florescer
 
 # Rode o projeto
 ./mvnw spring-boot:run
+```
+
+---
+
+## 📄 Documentação da API
+
+Acesse a documentação completa com Swagger em:
+
+```
+http://localhost:8080/swagger-ui.html
+```
+
+---
+
+## 🧪 Exemplos de Requisição
+
+### Criar Produto
+
+```json
+POST /products
+
+{
+  "name": "Camisa branca",
+  "description": "Camisa de algodão com estampa floral",
+  "price": 79.90
+}
+```
+
+### Atualizar Produto
+
+```json
+PUT /products/{id}
+
+{
+  "name": "Camisa branca atualizada",
+  "description": "Modelo slim com novos detalhes",
+  "price": 89.90
+}
+```
+
+---
+
+## 📸 Upload de Imagem
+
+**Endpoint:**
+```http
+POST /products/{id}/image
+```
+
+**Resposta:**
+```json
+{
+  "imageUrl": "http://localhost:8080/images/{nomeDaImagem}.jpg"
+}
+```
+
+---
+
+## 🤖 Autor
+
+Desenvolvido por **Alisson Souto**  
+🔗 [LinkedIn](https://www.linkedin.com/in/alisson-souto-java/)
+
+---
+
+## 💡 Objetivo
+
+Esse projeto foi criado como parte de meu portfólio para demonstrar habilidades práticas com Spring Boot e boas práticas de desenvolvimento. Estou em busca de oportunidades como desenvolvedor backend júnior. Entre em contato! 🚀
