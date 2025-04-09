@@ -12,7 +12,9 @@ import com.florescer.auth.domain.dto.RegisterRequest;
 import com.florescer.auth.domain.dto.RegisterResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -20,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "Autenticação", description = "Endpoints para registro e login de usuários")
+@Tag(name = "Auth Product", description = "Endpoints para registro e login de usuários")
 @SecurityRequirement(name = SecurityConfig.SECURITY)
 public class AuthControllerImpl implements AuthController {
 	
@@ -28,20 +30,26 @@ public class AuthControllerImpl implements AuthController {
 
 	@Override
 	@Operation(summary = "Registrar um novo usuário", description = "Cria uma nova conta de usuário no sistema.")
-    @ApiResponse(responseCode = "201", description = "Usuário registrado com sucesso")
-    @ApiResponse(responseCode = "400", description = "Dados inválidos fornecidos")
-	@ApiResponse(responseCode = "409", description = "Usuário já existente")
-	@ApiResponse(responseCode = "500", description = "Erro no servidor")
-	public ResponseEntity<RegisterResponse> registerUser(@Valid RegisterRequest request) {
+	@ApiResponses(value = {
+		@ApiResponse(responseCode = "201", description = "Usuário registrado com sucesso"),
+		@ApiResponse(responseCode = "400", description = "Dados inválidos fornecidos"),
+		@ApiResponse(responseCode = "409", description = "Usuário já existente"),
+		@ApiResponse(responseCode = "500", description = "Erro no servidor")
+	})
+	public ResponseEntity<RegisterResponse> registerUser(
+			@RequestBody(description = "Dados do novo usuário") @Valid RegisterRequest request) {
 		return ResponseEntity.status(HttpStatus.CREATED).body(service.register(request));
 	}
 
 	@Override
 	@Operation(summary = "Autenticar um usuário", description = "Realiza o login e retorna um token JWT.")
-    @ApiResponse(responseCode = "200", description = "Login realizado com sucesso")
-    @ApiResponse(responseCode = "401", description = "Credenciais inválidas")
-	@ApiResponse(responseCode = "500", description = "Erro no servidor")
-	public ResponseEntity<LoginResponse> loginUser(@Valid LoginRequest request) {
+    @ApiResponses({
+    	@ApiResponse(responseCode = "200", description = "Login realizado com sucesso"),
+        @ApiResponse(responseCode = "401", description = "Credenciais inválidas"),
+    	@ApiResponse(responseCode = "500", description = "Erro no servidor")
+    })
+	public ResponseEntity<LoginResponse> loginUser(
+			@RequestBody(description = "Dados de login do usuário") @Valid LoginRequest request) {
 		return ResponseEntity.ok(service.login(request));
 	}
 }
