@@ -115,7 +115,3 @@ Desenvolvido por **Alisson Souto**
 🔗 [LinkedIn](https://www.linkedin.com/in/alisson-souto-java/)
 
 ---
-
-## 💡 Objetivo
-
-Esse projeto foi criado como parte de meu portfólio para demonstrar habilidades práticas com Spring Boot e boas práticas de desenvolvimento. Estou em busca de oportunidades como desenvolvedor backend júnior. Entre em contato! 🚀
