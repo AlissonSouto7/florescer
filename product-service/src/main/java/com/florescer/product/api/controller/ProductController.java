@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.florescer.product.api.dto.request.ProductCreateRequest;
 import com.florescer.product.api.dto.request.ProductPatchRequest;
 import com.florescer.product.api.dto.response.ProductCreateResponse;
 import com.florescer.product.api.dto.response.ProductGetResponse;
@@ -25,7 +24,7 @@ import com.florescer.product.api.dto.response.ProductListResponse;
 public interface ProductController {
 	
 	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<ProductCreateResponse> createProduct(@RequestPart("product") ProductCreateRequest request, 
+	public ResponseEntity<ProductCreateResponse> create(@RequestPart("product") String request, 
 			@RequestPart("image") MultipartFile image);
 	
 	@GetMapping

@@ -3,7 +3,6 @@ package com.florescer.product.api.dto.response;
 import java.util.UUID;
 
 import com.florescer.product.api.utils.SwaggerConstants;
-import com.florescer.product.domain.entity.Product;
 import com.florescer.product.domain.enums.Status;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -34,19 +33,4 @@ public record ProductListResponse(
         Boolean availability,
 
         @Schema(description = "Status do produto", example = SwaggerConstants.STATUS_EXAMPLE)
-        Status status) {
-
-    public static ProductListResponse from(Product product) {
-        return new ProductListResponse(
-                product.getId(),
-                product.getName(),
-                product.getType(),
-                product.getDescription(),
-                product.getPrice(),
-                product.getQuantityStock(),
-                product.getCareRequirements(),
-                product.getAvailability(),
-                product.getStatus()
-        );
-    }
-}
+        Status status) {}

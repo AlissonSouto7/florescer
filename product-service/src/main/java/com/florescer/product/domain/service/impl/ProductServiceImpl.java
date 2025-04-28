@@ -13,7 +13,7 @@ import com.florescer.product.api.dto.request.ProductPatchRequest;
 import com.florescer.product.api.dto.response.ProductCreateResponse;
 import com.florescer.product.api.dto.response.ProductGetResponse;
 import com.florescer.product.api.dto.response.ProductListResponse;
-import com.florescer.product.api.mapper.ProductMapper;
+import com.florescer.product.api.utils.ProductMapper;
 import com.florescer.product.domain.entity.Product;
 import com.florescer.product.domain.exception.personalizadas.FileStorageException;
 import com.florescer.product.domain.exception.personalizadas.InvalidPatchException;
@@ -53,7 +53,7 @@ public class ProductServiceImpl implements ProductService {
 	}
 
 	@Override
-	public ProductGetResponse getProductById(UUID id) {
+	public ProductGetResponse findById(UUID id) {
 		Product product = getProductOrThrow(id);
 		return ProductMapper.toGetResponse(product);
 	}
@@ -83,7 +83,7 @@ public class ProductServiceImpl implements ProductService {
 	
 	private boolean isRequestEmpty(ProductPatchRequest request) {
         return Stream.of(request.name(), request.type(), request.description(), request.price(),
-                request.quantityStock(), request.careRequirements(), request.availability(), request.status())
+        		request.careRequirements(), request.availability(), request.status())
                 .allMatch(Objects::isNull);
     }
 }

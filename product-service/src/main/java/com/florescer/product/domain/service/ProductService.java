@@ -16,7 +16,7 @@ public interface ProductService {
 
 	public List<ProductListResponse> getListProduct();
 
-	public ProductGetResponse getProductById(UUID productId);
+	public ProductGetResponse findById(UUID productId);
 
 	public void patchProduct(UUID productId, ProductPatchRequest request);
 

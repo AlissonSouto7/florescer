@@ -16,5 +16,5 @@ spring:
   
 # SETTING THE SWAGGER ADDRESS  
 springdoc:
- swagger-ui:
-  path: /swagger
+  swagger-ui:
+    path: /swagger

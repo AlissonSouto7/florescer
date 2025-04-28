@@ -1,4 +1,4 @@
-package com.florescer.product.api.mapper;
+package com.florescer.product.api.utils;
 
 import java.util.List;
 import java.util.Optional;
@@ -37,16 +37,29 @@ public class ProductMapper {
                 .build();
     }
     
-    public static List<ProductListResponse> toGetAllResponse(List<Product> products) {
-        return products.stream().map(ProductListResponse::from).toList();
+    public static ProductListResponse toListResponse(Product product) {
+        return new ProductListResponse(
+                product.getId(),
+                product.getName(),
+                product.getType(),
+                product.getDescription(),
+                product.getPrice(),
+                product.getQuantityStock(),
+                product.getCareRequirements(),
+                product.getAvailability(),
+                product.getStatus());
     }
+    
+    public static List<ProductListResponse> toGetAllResponse(List<Product> products) {
+        return products.stream().map(ProductMapper::toListResponse).toList();
+    }
+    
     
     public static void applyPatch(Product product, ProductPatchRequest request) {
         Optional.ofNullable(request.name()).ifPresent(product::setName);
         Optional.ofNullable(request.type()).ifPresent(product::setType);
         Optional.ofNullable(request.description()).ifPresent(product::setDescription);
         Optional.ofNullable(request.price()).ifPresent(product::setPrice);
-        Optional.ofNullable(request.quantityStock()).ifPresent(product::setQuantityStock);
         Optional.ofNullable(request.careRequirements()).ifPresent(product::setCareRequirements);
         Optional.ofNullable(request.availability()).ifPresent(product::setAvailability);
         Optional.ofNullable(request.status()).ifPresent(product::setStatus);

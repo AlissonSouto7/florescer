@@ -16,7 +16,7 @@ import lombok.extern.log4j.Log4j2;
 @Repository
 @RequiredArgsConstructor
 @Log4j2	
-public class ProductRestController implements ProductRepository {
+public class ProductDataAccess implements ProductRepository {
 
 	private final ProductJPARepository repository;
 	
