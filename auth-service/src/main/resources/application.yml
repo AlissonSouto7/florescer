@@ -1,0 +1,30 @@
+# DEFINING THE APPLICATION PORT 
+server:
+  port: 8080
+
+# CONFIGURING THE DATABASE    
+spring: 
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/authdb
+    username: ${DB_USERNAME} 
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
+
+# PRIVATE KEY ADDRESS
+jwt:
+ private-key: ${RSA_PRIVATE_KEY}
+ public-key: ${RSA_PUBLIC_KEY}
+ access-expiration: 3600
+
+# SETTING THE SWAGGER ADDRESS  
+springdoc:
+  swagger-ui:
+    path: /swagger

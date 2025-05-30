@@ -1,0 +1,49 @@
+# Compiled class files
+*.class
+
+# Maven target directory
+target/
+
+# Eclipse project files
+.project
+
+# IntelliJ IDEA project files
+.idea/
+*.iml
+
+# Maven Wrapper files
+.mvn/wrapper/
+mvnw
+mvnw.cmd
+.mvn/
+
+# Logs and temp files
+*.log
+*.tmp
+*.bak
+
+# Docker related temporary files
+docker/*.log
+docker/*.tmp
+docker/data/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Environment files (security)
+.env
+
+# Java IDE settings
+*.settings/
+*.classpath
+.factorypath
+
+# Node/Frontend (se tiver algo no futuro)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Ignore bin and build if for some reason they appear
+bin/
+build/
