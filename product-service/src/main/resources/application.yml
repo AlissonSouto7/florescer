@@ -17,8 +17,16 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  security:
+   oauth2:
+    resourceserver:
+     jwt:
+      public-key-location: classpath:chaves/app.pub
   
 # SETTING THE SWAGGER ADDRESS  
 springdoc:
  swagger-ui:
   path: /swagger
+
+jwt:
+ public-key: ${RSA_PUBLIC_KEY}

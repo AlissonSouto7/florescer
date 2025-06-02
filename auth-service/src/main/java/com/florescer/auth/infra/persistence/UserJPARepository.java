@@ -10,7 +10,5 @@ import com.florescer.auth.domain.entity.User;
 
 @Repository
 public interface UserJPARepository extends JpaRepository<User, UUID> {
-
 	Optional<User> findByEmail(String email);
-
 }
