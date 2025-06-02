@@ -23,6 +23,7 @@ import com.florescer.product.api.dto.response.ProductCreateResponse;
 import com.florescer.product.api.dto.response.ProductGetResponse;
 import com.florescer.product.api.dto.response.ProductListResponse;
 import com.florescer.product.api.utils.SwaggerConstants;
+import com.florescer.product.config.SecurityConfig;
 import com.florescer.product.domain.service.ProductService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,6 +31,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -38,6 +40,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequiredArgsConstructor
 @Tag(name = "Produtos", description = "Gerenciamento de produtos da floricultura")
+@SecurityRequirement(name = SecurityConfig.SECURITY)
 public class ProductControllerImpl implements ProductController {
 	
 	private final ObjectMapper objectMapper;

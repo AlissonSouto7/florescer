@@ -15,6 +15,7 @@ public class RoleRepositoryImpl implements RoleRepository {
 	
 	@Override
 	public Role findByName(String name) {
-		return jpaRepository.findByName(name);
+		return jpaRepository.findByName(name)
+				.orElseThrow(() -> new RuntimeException("Role ADMIN não encontrada"));
 	}
 }
