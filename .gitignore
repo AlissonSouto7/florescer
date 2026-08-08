@@ -11,11 +11,7 @@ target/
 .idea/
 *.iml
 
-# Maven Wrapper files
-.mvn/wrapper/
-mvnw
-mvnw.cmd
-.mvn/
+# Maven Wrapper IS versioned on purpose (reproducible builds) - do not ignore mvnw/.mvn
 
 # Logs and temp files
 *.log
@@ -34,15 +30,20 @@ Thumbs.db
 # Environment files (security)
 .env
 
+# Private keys and certificates (security)
+*.key
+*.pem
+*.p12
+*.jks
+
 # Java IDE settings
 *.settings/
 *.classpath
 .factorypath
 
 # Node/Frontend (se tiver algo no futuro)
+# Lockfiles (package-lock.json, yarn.lock) DEVEM ser versionados - nao ignorar
 node_modules/
-package-lock.json
-yarn.lock
 
 # Ignore bin and build if for some reason they appear
 bin/
