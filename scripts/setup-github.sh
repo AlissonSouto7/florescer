@@ -6,15 +6,55 @@
 # Pré-requisitos:
 #   gh auth login          (com escopos repo, workflow, read:project, project)
 #
+# Uso:
+#   ./setup-github.sh              labels, milestones, issues e environments
+#   ./setup-github.sh protection   branch protection (rodar só DEPOIS do primeiro
+#                                  CI, para que os status checks já existam com
+#                                  os nomes exatos que o workflow gera)
+#
 # É idempotente: rodar de novo não duplica nada.
 #
 set -euo pipefail
 
 REPO="${REPO:-AlissonSouto7/florescer}"
 OWNER="${REPO%%/*}"
+STEP="${1:-setup}"
 
 echo "==> Repositório: $REPO"
 gh repo view "$REPO" --json nameWithOwner -q .nameWithOwner >/dev/null
+
+# ------------------------------------------------------ branch protection ----
+# Etapa separada de propósito: exigir um status check que ainda não existe
+# deixa o pull request travado sem explicação. Rode depois do primeiro CI.
+if [ "$STEP" = "protection" ]; then
+  protect() {
+    local branch="$1"
+    gh api -X PUT "repos/$REPO/branches/$branch/protection" --input - >/dev/null <<'JSON'
+{
+  "required_status_checks": {
+    "strict": true,
+    "contexts": ["build (auth-service)", "build (product-service)", "secret scan"]
+  },
+  "enforce_admins": false,
+  "required_pull_request_reviews": {
+    "required_approving_review_count": 0,
+    "dismiss_stale_reviews": true,
+    "require_code_owner_reviews": false
+  },
+  "restrictions": null,
+  "required_linear_history": true,
+  "allow_force_pushes": false,
+  "allow_deletions": false,
+  "required_conversation_resolution": true
+}
+JSON
+    echo "    $branch protegida"
+  }
+  echo "==> Branch protection"
+  protect main
+  protect develop
+  exit 0
+fi
 
 # ---------------------------------------------------------------- labels ----
 echo "==> Labels"
@@ -195,35 +235,10 @@ JSON
 echo "    production exige aprovação manual"
 
 echo
-echo "==> Branch protection"
-protect() {
-  local branch="$1"
-  gh api -X PUT "repos/$REPO/branches/$branch/protection" --input - >/dev/null <<'JSON'
-{
-  "required_status_checks": {
-    "strict": true,
-    "contexts": ["build (auth-service)", "build (product-service)", "secret scan"]
-  },
-  "enforce_admins": false,
-  "required_pull_request_reviews": {
-    "required_approving_review_count": 0,
-    "dismiss_stale_reviews": true,
-    "require_code_owner_reviews": false
-  },
-  "restrictions": null,
-  "required_linear_history": true,
-  "allow_force_pushes": false,
-  "allow_deletions": false,
-  "required_conversation_resolution": true
-}
-JSON
-  echo "    $branch protegida"
-}
-protect main
-protect develop
-
+echo "Pronto. Depois do primeiro CI verde, ligue as travas de branch:"
+echo "  ./scripts/setup-github.sh protection"
 echo
-echo "Pronto. Falta só criar o board manualmente:"
+echo "E crie o board manualmente:"
 echo "  https://github.com/users/$OWNER/projects/new  (template Board)"
 echo "  Colunas: Backlog / Ready / In Progress (WIP 1) / In Review (WIP 3) / Done"
 echo "  Depois: Settings do projeto -> Manage access -> adicionar o repositório $REPO"
