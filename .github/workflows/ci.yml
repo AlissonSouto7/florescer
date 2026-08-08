@@ -54,36 +54,6 @@ jobs:
             ${{ matrix.service }}/target/site/jacoco/
           retention-days: 7
 
-  dependency-check:
-    name: dependency vulnerabilities
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: temurin
-          cache: maven
-
-      # Falha o build se alguma dependência tiver CVE de severidade alta (CVSS >= 7).
-      - name: OWASP dependency check (auth-service)
-        working-directory: auth-service
-        run: >
-          ./mvnw --batch-mode --no-transfer-progress
-          org.owasp:dependency-check-maven:12.1.0:check
-          -DfailBuildOnCVSS=7 -DnvdApiKey=${{ secrets.NVD_API_KEY }}
-        continue-on-error: true
-
-      - name: OWASP dependency check (product-service)
-        working-directory: product-service
-        run: >
-          ./mvnw --batch-mode --no-transfer-progress
-          org.owasp:dependency-check-maven:12.1.0:check
-          -DfailBuildOnCVSS=7 -DnvdApiKey=${{ secrets.NVD_API_KEY }}
-        continue-on-error: true
-
   secret-scan:
     name: secret scan
     runs-on: ubuntu-latest

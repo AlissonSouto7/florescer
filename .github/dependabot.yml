@@ -1,0 +1,60 @@
+version: 2
+
+# O Dependabot cobre o que o scan de dependências no CI fazia, e melhor:
+# em vez de reprocessar a base de vulnerabilidades a cada pull request, ele
+# monitora continuamente e abre um pull request com a correção quando algo
+# aparece. Vulnerabilidade surge com o tempo, não com o commit.
+updates:
+  - package-ecosystem: maven
+    directory: /auth-service
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: [infra]
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      # Atualizações de patch e minor viram um pull request só: revisar vinte
+      # bumps triviais separados é o caminho mais curto para ninguém revisar.
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: maven
+    directory: /product-service
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: [infra]
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  # As actions do pipeline também são dependências, e rodam com acesso ao
+  # repositório. Uma action desatualizada é superfície de ataque de supply chain.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    labels: [infra]
+    commit-message:
+      prefix: chore
+      include: scope
+
+  - package-ecosystem: docker
+    directories:
+      - /auth-service
+      - /product-service
+    schedule:
+      interval: weekly
+      day: monday
+    labels: [infra]
+    commit-message:
+      prefix: chore
+      include: scope

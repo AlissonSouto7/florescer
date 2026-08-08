@@ -50,6 +50,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+      # Publica o resultado do scan da imagem na aba Security.
+      security-events: write
     strategy:
       matrix:
         service: [auth-service, product-service]
@@ -77,6 +79,24 @@ jobs:
             ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.service }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # A imagem carrega mais do que o nosso código: distribuição base, JRE e
+      # bibliotecas de sistema. O Dependabot não enxerga essa camada.
+      - name: Scan image for vulnerabilities
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.service }}:${{ github.sha }}
+          format: sarif
+          output: trivy-${{ matrix.service }}.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+
+      - name: Upload scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-${{ matrix.service }}.sarif
+          category: trivy-${{ matrix.service }}
 
   deploy:
     name: deploy to ${{ needs.resolve.outputs.environment }}
