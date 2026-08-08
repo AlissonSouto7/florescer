@@ -1,4 +1,4 @@
-package com.florescer.auth.infra.security;
+package com.florescer.auth.infrastructure.security;
 
 import org.springframework.security.core.userdetails.UserDetails;
 

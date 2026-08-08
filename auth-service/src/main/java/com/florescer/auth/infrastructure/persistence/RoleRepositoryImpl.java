@@ -1,4 +1,4 @@
-package com.florescer.auth.infra.persistence;
+package com.florescer.auth.infrastructure.persistence;
 
 import org.springframework.stereotype.Repository;
 

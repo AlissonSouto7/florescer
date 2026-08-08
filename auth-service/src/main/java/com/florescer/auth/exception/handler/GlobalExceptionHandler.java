@@ -1,4 +1,4 @@
-package com.florescer.auth.exception;
+package com.florescer.auth.exception.handler;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -11,6 +11,9 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import com.florescer.auth.exception.custom.EmailAlreadyRegisteredException;
+import com.florescer.auth.exception.custom.EmailNotFoundException;
 
 import lombok.extern.log4j.Log4j2;
 

@@ -1,4 +1,4 @@
-package com.florescer.auth.exception;
+package com.florescer.auth.exception.custom;
 
 public class EmailAlreadyRegisteredException extends RuntimeException {
 	private static final long serialVersionUID = 1L;

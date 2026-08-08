@@ -1,4 +1,4 @@
-package com.florescer.auth.infra.security;
+package com.florescer.auth.infrastructure.security;
 
 import java.time.Instant;
 import java.util.Optional;

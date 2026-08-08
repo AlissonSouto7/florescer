@@ -15,8 +15,8 @@ import com.florescer.auth.domain.dto.RegisterRequest;
 import com.florescer.auth.domain.dto.RegisterResponse;
 import com.florescer.auth.domain.entity.Role;
 import com.florescer.auth.domain.entity.User;
-import com.florescer.auth.exception.EmailAlreadyRegisteredException;
-import com.florescer.auth.infra.security.JwtServiceImpl;
+import com.florescer.auth.exception.custom.EmailAlreadyRegisteredException;
+import com.florescer.auth.infrastructure.security.JwtServiceImpl;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

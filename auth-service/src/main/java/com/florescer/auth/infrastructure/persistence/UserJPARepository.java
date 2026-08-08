@@ -1,4 +1,4 @@
-package com.florescer.auth.infra.persistence;
+package com.florescer.auth.infrastructure.persistence;
 
 import java.util.Optional;
 import java.util.UUID;

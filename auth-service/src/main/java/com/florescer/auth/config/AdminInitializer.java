@@ -10,7 +10,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.florescer.auth.application.repository.UserRepository;
 import com.florescer.auth.domain.entity.Role;
 import com.florescer.auth.domain.entity.User;
-import com.florescer.auth.infra.persistence.RoleJPARepository;
+import com.florescer.auth.infrastructure.persistence.RoleJPARepository;
 
 @Configuration
 public class AdminInitializer {

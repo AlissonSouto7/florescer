@@ -14,6 +14,7 @@ import jakarta.validation.Valid;
 
 @RequestMapping("/v1/auth")
 public interface AuthController {
+	
 	@PostMapping("/register")
 	public ResponseEntity<RegisterResponse> registerUser(@RequestBody @Valid RegisterRequest request);
 	

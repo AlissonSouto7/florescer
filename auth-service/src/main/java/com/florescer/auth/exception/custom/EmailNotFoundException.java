@@ -1,4 +1,4 @@
-package com.florescer.auth.exception;
+package com.florescer.auth.exception.custom;
 
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 

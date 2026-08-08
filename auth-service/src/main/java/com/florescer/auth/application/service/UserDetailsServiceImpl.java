@@ -6,7 +6,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import com.florescer.auth.application.repository.UserRepository;
-import com.florescer.auth.exception.EmailNotFoundException;
+import com.florescer.auth.exception.custom.EmailNotFoundException;
 
 import lombok.RequiredArgsConstructor;
 
