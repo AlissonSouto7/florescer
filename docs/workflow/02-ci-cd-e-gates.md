@@ -23,9 +23,21 @@ Os gates deste projeto, na ordem em que uma mudança os encontra:
 | 1 | PR obrigatório | Branch protection | Push direto em `main`/`develop` |
 | 2 | Build + testes verdes | Workflow `ci.yml`, job `build` | Merge do PR |
 | 3 | Coverage gate | JaCoCo, dentro do mesmo job | Merge do PR |
-| 4 | Secret scan | Workflow `ci.yml`, job `secret-scan` | Merge do PR |
+| 4 | Secret scan | Push protection nativo + `ci.yml`, job `secret-scan` | O push, e depois o merge |
 | 5 | Revisão humana | CODEOWNERS + leitura do PR | Merge do PR |
 | 6 | Aprovação de environment | GitHub Environments | Deploy em produção |
+
+Além dos gates, três verificações rodam **fora** do caminho crítico do merge, porque medem coisas que não mudam com o seu commit:
+
+| Ferramenta | O que enxerga | Quando roda |
+|---|---|---|
+| **Dependabot** | dependências declaradas: Maven dos dois serviços, actions do pipeline, imagens base | continuamente, abrindo PR com a correção |
+| **CodeQL** | o código que nós escrevemos: injeção, path traversal, desserialização insegura | em PR e semanalmente |
+| **Trivy** | a imagem construída: distribuição base, JRE, bibliotecas de sistema | no CD, a cada imagem publicada |
+
+A divisão não é arbitrária, é por **o que cada um consegue ver**. Dependabot lê arquivos de manifesto e não sabe nada sobre o sistema operacional dentro da imagem. Trivy inspeciona a imagem pronta e não entende a lógica do seu código. CodeQL segue o fluxo do dado no seu código e não sabe qual versão de biblioteca você declarou. Três pontos cegos diferentes, três ferramentas.
+
+Este projeto começou com o OWASP dependency-check rodando em cada PR e foi trocado depois da primeira execução real: ele baixava 374.301 registros da base de vulnerabilidades, levou mais de 13 minutos e ainda estava em 43% quando a execução foi cancelada. Estava reprocessando, a cada pull request, uma base que muda com o tempo e não com o commit. Vulnerabilidade nova aparece porque alguém no mundo publicou uma CVE, não porque você mexeu no código, e é por isso que esse tipo de verificação pertence a um agendamento ou a um serviço contínuo, não ao caminho do merge.
 
 ### Gate 1: pull request obrigatório
 
@@ -53,7 +65,23 @@ Uma armadilha que vale saber explicar: **cobertura alta não significa código t
 
 ### Gate 4: secret scan
 
-O Gitleaks varre os commits do PR procurando padrões de segredo (chave privada, token, credencial). Existe porque este repositório já teve uma chave privada RSA commitada, que assinava todos os JWTs do sistema, e ninguém percebeu por dois meses. O `.gitignore` agora bloqueia `*.key` e `*.pem`, mas gitignore só protege quem não usa `git add -f`.
+O Gitleaks varre os commits do PR procurando padrões de segredo (chave privada, token, credencial). Existe porque este repositório já teve uma chave privada RSA commitada, que assinava todos os JWTs do sistema, num repositório **público**, e ninguém percebeu por dois meses. O `.gitignore` agora bloqueia `*.key` e `*.pem`, mas gitignore só protege quem não usa `git add -f`.
+
+Acima dele existe uma camada melhor: o **push protection** nativo do GitHub, ativado nas configurações do repositório. Ele recusa o push no momento em que a credencial sairia da sua máquina. A diferença importa: o Gitleaks no CI avisa quando o segredo **já está** no servidor, e a partir daí o estrago está feito, porque remover do histórico não desfaz quem já leu. O scan no CI vira a segunda linha, para o que o push protection não reconhece.
+
+#### Falso positivo: silenciar o alarme ou ajustar a regra
+
+Na primeira execução real deste pipeline, o Gitleaks reprovou o PR apontando `JwtConfig.java`:
+
+```java
+private static final String PEM_PRIVATE_HEADER = "-----BEGIN PRIVATE KEY-----";
+```
+
+Não é uma chave, é o rótulo do formato, usado para validar que o valor recebido é mesmo um PEM. Mas para uma ferramenta que procura padrões de texto, esse é exatamente o padrão procurado.
+
+A saída rápida seria mandar ignorar o arquivo inteiro. Isso resolveria o vermelho e deixaria justamente o arquivo que manipula chaves fora do escaneamento: o alarme silenciado exatamente onde ele mais importa. O que foi feito, no `.gitleaks.toml`, foi uma exceção estreita, que só aceita o texto quando ele está sendo atribuído a uma constante `PEM_*_HEADER` ou passado a um `replace()`.
+
+E a exceção foi verificada como se verifica um teste: plantando uma chave privada de verdade num arquivo Java e rodando o scan de novo. Continuou detectando. Toda vez que você afrouxa uma regra de segurança, o passo seguinte é provar que ela ainda pega o caso real.
 
 ### Gate 5: revisão humana
 
