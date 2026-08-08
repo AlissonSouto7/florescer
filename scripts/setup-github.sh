@@ -33,7 +33,13 @@ if [ "$STEP" = "protection" ]; then
 {
   "required_status_checks": {
     "strict": true,
-    "contexts": ["build (auth-service)", "build (product-service)", "secret scan"]
+    "contexts": [
+      "build (auth-service)",
+      "build (product-service)",
+      "secret scan",
+      "analyze (java-kotlin)",
+      "analyze (javascript-typescript)"
+    ]
   },
   "enforce_admins": false,
   "required_pull_request_reviews": {
