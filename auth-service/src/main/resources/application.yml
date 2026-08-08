@@ -28,7 +28,17 @@ jwt:
   public-key: ${RSA_PUBLIC_KEY}
   access-expiration: 3600
 
-# SETTING THE SWAGGER ADDRESS  
+# SETTING THE SWAGGER ADDRESS
 springdoc:
   swagger-ui:
     path: /swagger
+
+# CONTA ADMINISTRATIVA INICIAL
+# Desligada por padrao. Ligue apenas no primeiro boot de um ambiente novo, com
+# e-mail e senha vindos do ambiente, e desligue depois. Sem valor padrao de
+# proposito: senha padrao e conta conhecida por quem le o repositorio.
+app:
+  admin:
+    enabled: ${ADMIN_ENABLED:false}
+    email: ${ADMIN_EMAIL:}
+    password: ${ADMIN_PASSWORD:}
