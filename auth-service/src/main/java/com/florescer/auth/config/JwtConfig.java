@@ -1,16 +1,17 @@
 package com.florescer.auth.config;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.KeyFactory;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.Base64;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.security.converter.RsaKeyConverters;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
@@ -21,38 +22,76 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 
+/**
+ * Carrega o par de chaves RSA usado para assinar e validar os JWTs.
+ *
+ * <p>Cada chave pode ser fornecida de duas formas, decididas pelo prefixo do valor:
+ * <ul>
+ *   <li>{@code classpath:} ou {@code file:} apontam para um recurso (uso em desenvolvimento);</li>
+ *   <li>qualquer outro valor é tratado como o conteúdo PEM em si, o formato usado em
+ *       produção, onde a chave chega por variável de ambiente ou secret manager.</li>
+ * </ul>
+ */
 @Configuration
 public class JwtConfig {
 
-    @Bean
-    RSAPrivateKey privateKey() throws Exception {
-        String privateKeyPEM = Files.readString(Path.of("src/main/resources/chaves/app.key"))
-                                    .replace("-----BEGIN PRIVATE KEY-----", "")
-                                    .replace("-----END PRIVATE KEY-----", "")
-                                    .replaceAll("\\s+", "");
-        byte[] encoded = Base64.getDecoder().decode(privateKeyPEM);
-        return (RSAPrivateKey) KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(encoded));
+    private static final String PEM_PRIVATE_HEADER = "-----BEGIN PRIVATE KEY-----";
+    private static final String PEM_PUBLIC_HEADER = "-----BEGIN PUBLIC KEY-----";
+
+    private final ResourceLoader resourceLoader;
+    private final String privateKeyValue;
+    private final String publicKeyValue;
+
+    public JwtConfig(ResourceLoader resourceLoader,
+                     @Value("${jwt.private-key}") String privateKeyValue,
+                     @Value("${jwt.public-key}") String publicKeyValue) {
+        this.resourceLoader = resourceLoader;
+        this.privateKeyValue = privateKeyValue;
+        this.publicKeyValue = publicKeyValue;
     }
 
     @Bean
-    RSAPublicKey publicKey() throws Exception {
-        String publicKeyPEM = Files.readString(Path.of("src/main/resources/chaves/app.pub"))
-                                   .replace("-----BEGIN PUBLIC KEY-----", "")
-                                   .replace("-----END PUBLIC KEY-----", "")
-                                   .replaceAll("\\s+", "");
-        byte[] encoded = Base64.getDecoder().decode(publicKeyPEM);
-        return (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(encoded));
+    RSAPrivateKey privateKey() throws IOException {
+        try (InputStream pem = openKey(privateKeyValue, PEM_PRIVATE_HEADER, "jwt.private-key")) {
+            return RsaKeyConverters.pkcs8().convert(pem);
+        }
     }
 
-	@Bean
-	JwtEncoder jwtEncoder(RSAPrivateKey privateKey, RSAPublicKey publicKey) {
-		JWK jwk = new RSAKey.Builder(publicKey).privateKey(privateKey).build();
-		var jwks = new ImmutableJWKSet<>(new JWKSet(jwk));
-		return new NimbusJwtEncoder(jwks);
-	}
+    @Bean
+    RSAPublicKey publicKey() throws IOException {
+        try (InputStream pem = openKey(publicKeyValue, PEM_PUBLIC_HEADER, "jwt.public-key")) {
+            return RsaKeyConverters.x509().convert(pem);
+        }
+    }
 
-	@Bean
-	JwtDecoder jwtDecoder(RSAPublicKey publicKey) {
-		return NimbusJwtDecoder.withPublicKey(publicKey).build();
-	}
+    @Bean
+    JwtEncoder jwtEncoder(RSAPrivateKey privateKey, RSAPublicKey publicKey) {
+        JWK jwk = new RSAKey.Builder(publicKey).privateKey(privateKey).build();
+        var jwks = new ImmutableJWKSet<>(new JWKSet(jwk));
+        return new NimbusJwtEncoder(jwks);
+    }
+
+    @Bean
+    JwtDecoder jwtDecoder(RSAPublicKey publicKey) {
+        return NimbusJwtDecoder.withPublicKey(publicKey).build();
+    }
+
+    private InputStream openKey(String value, String expectedPemHeader, String propertyName) throws IOException {
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException(propertyName + " nao foi configurada.");
+        }
+
+        String trimmed = value.trim();
+        if (trimmed.startsWith("classpath:") || trimmed.startsWith("file:")) {
+            return resourceLoader.getResource(trimmed).getInputStream();
+        }
+
+        // Variáveis de ambiente costumam entregar o PEM com \n escapado em vez de quebra real.
+        String pem = trimmed.replace("\\n", "\n");
+        if (!pem.startsWith(expectedPemHeader)) {
+            throw new IllegalStateException(propertyName + " deve conter um PEM iniciando com "
+                    + expectedPemHeader + " ou apontar para classpath:/file:");
+        }
+        return new ByteArrayInputStream(pem.getBytes(StandardCharsets.UTF_8));
+    }
 }

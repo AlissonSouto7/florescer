@@ -1,0 +1,55 @@
+name: CodeQL
+
+# Análise estática de segurança: procura padrões de vulnerabilidade no código
+# (injeção de SQL, path traversal, XSS, desserialização insegura) seguindo o
+# fluxo do dado da entrada até onde ele é usado.
+#
+# Complementa o secret scan, que olha só por credenciais, e o Dependabot, que
+# olha só por dependências. Este olha o código que nós mesmos escrevemos.
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+  schedule:
+    # Segunda de manhã: regras novas do CodeQL pegam código que já estava lá.
+    - cron: '0 9 * * 1'
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Necessária para publicar os achados na aba Security do repositório.
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: java-kotlin
+            build-mode: none
+          - language: javascript-typescript
+            build-mode: none
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          # security-extended acrescenta regras de menor severidade às do
+          # conjunto padrão. Vale enquanto a base de código é pequena.
+          queries: security-extended
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.language }}

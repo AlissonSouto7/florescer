@@ -18,11 +18,13 @@ spring:
     init:
       mode: always
 
-# PRIVATE KEY ADDRESS
+# RSA KEY PAIR
+# Aceita o conteudo PEM (producao, via env/secret manager) ou um resource
+# classpath:/file: (desenvolvimento). Ver JwtConfig.
 jwt:
- private-key: ${RSA_PRIVATE_KEY}
- public-key: ${RSA_PUBLIC_KEY}
- access-expiration: 3600
+  private-key: ${RSA_PRIVATE_KEY:classpath:chaves/app.key}
+  public-key: ${RSA_PUBLIC_KEY:classpath:chaves/app.pub}
+  access-expiration: 3600
 
 # SETTING THE SWAGGER ADDRESS  
 springdoc:

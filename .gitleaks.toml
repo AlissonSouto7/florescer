@@ -1,0 +1,21 @@
+title = "Florescer - configuração do scan de segredos"
+
+# Herda todas as regras padrão do gitleaks e só acrescenta exceções.
+[extend]
+useDefault = true
+
+[allowlist]
+description = """
+O texto do cabeçalho PEM aparece no código como constante de validação e em
+chamadas de replace que limpam o formato. É o rótulo do formato, não a chave.
+
+A exceção casa apenas com esses dois usos. Uma chave de verdade colada no
+código (String algo = "-----BEGIN PRIVATE KEY-----\\nMIIE...") continua sendo
+detectada, porque não é atribuída a uma constante PEM_*_HEADER nem está dentro
+de um replace.
+"""
+regexTarget = "line"
+regexes = [
+  '''PEM_\w+_HEADER\s*=\s*"-----BEGIN''',
+  '''\.replace\(\s*"-----BEGIN''',
+]

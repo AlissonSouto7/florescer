@@ -1,0 +1,57 @@
+name: Bug
+description: Algo está quebrado ou se comporta diferente do esperado
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happens
+    attributes:
+      label: O que acontece
+      description: O comportamento errado, observado. Não a suposição do que causa.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: O que deveria acontecer
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Como reproduzir
+      description: Passos numerados que levam ao erro, incluindo dados de entrada.
+      placeholder: |
+        1. POST /v1/auth/login com email X e senha Y
+        2. Copiar o accessToken
+        3. GET /v1/product com esse token
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidência
+      description: Log, print, corpo da resposta HTTP ou valor no banco. Cole o output cru.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severidade
+      options:
+        - Crítico (dado exposto, dinheiro errado, sistema fora)
+        - Alto (fluxo principal quebrado, sem contorno)
+        - Médio (quebra com contorno ou em caso de borda)
+        - Baixo (incômodo, cosmético)
+    validations:
+      required: true
+
+  - type: input
+    id: where
+    attributes:
+      label: Onde
+      description: Serviço e arquivo, se já souber.
+      placeholder: auth-service, JwtConfig.java:29
