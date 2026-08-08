@@ -1,0 +1,75 @@
+name: CI
+
+# Roda em todo PR e em todo push para as branches de integração.
+# Os jobs deste workflow são os status checks obrigatórios das branch protection rules:
+# nenhum merge acontece sem eles verdes.
+on:
+  pull_request:
+    branches: [develop, main, 'release/**']
+  push:
+    branches: [develop, main]
+
+# Um PR novo cancela a execução anterior da mesma branch: economiza runner e
+# evita revisar resultado de código que já mudou.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      # fail-fast desligado: se o auth quebrar, ainda quero saber se o product passa.
+      fail-fast: false
+      matrix:
+        service: [auth-service, product-service]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+          cache: maven
+
+      # verify roda compile + testes (Testcontainers sobe o banco real via Docker,
+      # já disponível no runner) + relatório JaCoCo + gate de cobertura.
+      - name: Build, test and coverage gate
+        working-directory: ${{ matrix.service }}
+        run: ./mvnw --batch-mode --no-transfer-progress verify
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-${{ matrix.service }}
+          path: |
+            ${{ matrix.service }}/target/surefire-reports/
+            ${{ matrix.service }}/target/site/jacoco/
+          retention-days: 7
+
+  secret-scan:
+    name: secret scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Necessária para o gitleaks comentar o achado no próprio pull request.
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Histórico completo: o scan olha os commits do PR, não só a árvore final.
+          fetch-depth: 0
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Regras padrão do gitleaks mais as exceções documentadas no arquivo.
+          GITLEAKS_CONFIG: ${{ github.workspace }}/.gitleaks.toml
