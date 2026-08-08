@@ -1,0 +1,24 @@
+# Build acontece dentro da imagem: nada de artefato local no contexto.
+target/
+.mvn/wrapper/*.jar
+
+# Nunca enviar segredo para o contexto de build.
+*.key
+*.pem
+.env
+
+# Lixo de IDE e SO
+.settings/
+.project
+.classpath
+.factorypath
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Docs e infra não entram na imagem
+Dockerfile
+.dockerignore
+docker/
+*.md

@@ -1,0 +1,50 @@
+name: Tarefa
+description: Feature, refatoração, teste, documentação ou infraestrutura
+labels: [task]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: O que precisa existir
+      description: O resultado esperado em uma ou duas frases.
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Por quê
+      description: O problema que isso resolve, ou o risco que remove.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Critérios de aceite
+      description: Como saber que terminou. Cada item precisa ser verificável, não opinião.
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: touches
+    attributes:
+      label: O que essa mudança encosta sem ser o alvo
+      description: Consumidores do código, outros perfis de usuário, custo (queries, tempo). Preencher antes de começar.
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Tipo
+      options:
+        - security
+        - feature
+        - refactor
+        - test
+        - docs
+        - infra
+    validations:
+      required: true

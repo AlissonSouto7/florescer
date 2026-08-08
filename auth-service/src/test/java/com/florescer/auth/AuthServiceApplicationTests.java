@@ -1,10 +1,10 @@
 package com.florescer.auth;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
-class AuthServiceApplicationTests {
+import com.florescer.auth.support.AbstractIntegrationTest;
+
+class AuthServiceApplicationTests extends AbstractIntegrationTest {
 
 	@Test
 	void contextLoads() {
