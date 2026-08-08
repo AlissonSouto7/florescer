@@ -2,16 +2,17 @@
   {
     "name": "jwt.private-key",
     "type": "java.lang.String",
-    "description": "A description for 'jwt.private-key'"
+    "description": "Chave RSA privada que assina os tokens. Aceita o conteudo PEM (producao, via variavel de ambiente ou secret manager) ou um resource classpath:/file: (desenvolvimento). Obrigatoria: sem ela a aplicacao nao sobe."
   },
   {
     "name": "jwt.public-key",
     "type": "java.lang.String",
-    "description": "A description for 'jwt.public-key'"
+    "description": "Chave RSA publica correspondente a privada, usada para validar os tokens emitidos. Mesmos formatos aceitos pela chave privada. Obrigatoria."
   },
   {
     "name": "jwt.access-expiration",
-    "type": "java.lang.String",
-    "description": "A description for 'jwt.access-expiration'"
+    "type": "java.lang.Long",
+    "description": "Validade do access token em segundos.",
+    "defaultValue": 3600
   }
 ]}
