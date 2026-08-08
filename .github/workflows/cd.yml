@@ -69,31 +69,56 @@ jobs:
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
+      # Nome de imagem Docker precisa ser minúsculo, e o dono do repositório no
+      # GitHub pode ter maiúsculas. Resolvido uma vez e reusado nos passos
+      # seguintes, para o scan apontar exatamente para a imagem publicada.
+      - name: Resolve image name
+        id: image
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: echo "name=${REGISTRY}/${REPOSITORY,,}/${{ matrix.service }}" >> "$GITHUB_OUTPUT"
+
+      # Gera as tags e os labels OCI padrão, que gravam na própria imagem de
+      # qual commit e de qual repositório ela veio.
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v6.2.0
+        with:
+          images: ${{ steps.image.outputs.name }}
+          tags: |
+            type=raw,value=${{ needs.resolve.outputs.tag }}
+            type=sha,format=long
+
       - name: Build and push
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.service }}
           push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.service }}:${{ needs.resolve.outputs.tag }}
-            ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.service }}:${{ github.sha }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       # A imagem carrega mais do que o nosso código: distribuição base, JRE e
       # bibliotecas de sistema. O Dependabot não enxerga essa camada.
       - name: Scan image for vulnerabilities
+        id: scan
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.service }}:${{ github.sha }}
+          # Escaneia pelo digest, que aponta para o binário exato que acabou de
+          # ser publicado, e não para uma tag que pode ser movida depois.
+          image-ref: ${{ steps.image.outputs.name }}@${{ steps.build.outputs.digest }}
           format: sarif
           output: trivy-${{ matrix.service }}.sarif
           severity: HIGH,CRITICAL
           ignore-unfixed: true
 
+      # Sem o guard, um scan que nem chegou a rodar faz o upload falhar
+      # procurando um arquivo que não existe, escondendo o erro real.
       - name: Upload scan results
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: steps.scan.outcome == 'success'
         with:
           sarif_file: trivy-${{ matrix.service }}.sarif
           category: trivy-${{ matrix.service }}
