@@ -13,8 +13,16 @@ public record RegisterRequest(
 		@Email(message = "E-mail inválido")
 		String email,
 
+		// O mínimo de 12 favorece frase em vez de palavra com símbolos: é mais
+		// fácil de lembrar e mais custosa de quebrar que "S3nh@!" com 6.
+		//
+		// O teto existe por limite do BCrypt, que ignora o que passa de 72 bytes:
+		// sem ele, uma senha longa seria truncada em silêncio e o usuário
+		// acreditaria ter mais proteção do que tem. Não é política, é o
+		// algoritmo. Como um caractere acentuado ocupa mais de um byte, o limite
+		// em caracteres fica abaixo de 72 para não estourar.
 		@NotBlank(message = "A senha é obrigatória")
-		@Size(min = 6, max = 20, message = "A senha deve ter entre 6 e 20 caracteres")
+		@Size(min = 12, max = 64, message = "A senha deve ter entre 12 e 64 caracteres")
 		String password
 ) {
 
