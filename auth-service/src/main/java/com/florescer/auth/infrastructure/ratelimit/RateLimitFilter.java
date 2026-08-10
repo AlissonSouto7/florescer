@@ -60,9 +60,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
 
         long retryAfter = rateLimiter.secondsUntilReset(clientKey);
-        // Sem o endereço nem qualquer dado do corpo: o log registra que houve
-        // excesso, não quem tentou o quê.
-        log.warn("Limite de tentativas excedido em {} ({}s para liberar)", request.getServletPath(), retryAfter);
+
+        // O caminho registrado vem da constante, e não da requisição. Escrever
+        // direto o valor recebido permitiria injetar quebras de linha e forjar
+        // entradas no log, corrompendo a mesma auditoria que este filtro
+        // alimenta. O log também não traz endereço nem corpo: registra que
+        // houve excesso, não quem tentou o quê.
+        String path = matchedPath(request);
+        log.warn("Limite de tentativas excedido em {} ({}s para liberar)", path, retryAfter);
 
         response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
@@ -71,6 +76,22 @@ public class RateLimitFilter extends OncePerRequestFilter {
         response.getWriter().write("""
                 {"error":"Muitas tentativas","details":"Aguarde alguns instantes e tente novamente."}
                 """);
+    }
+
+    /**
+     * Devolve o caminho protegido correspondente, tirado da própria constante.
+     *
+     * <p>Parece equivalente a usar o valor da requisição, já que o filtro só roda
+     * quando os dois coincidem, e não é: devolver a instância da constante
+     * garante que nada vindo de fora chega ao log, independentemente do que a
+     * comparação aceite hoje ou depois.
+     */
+    private String matchedPath(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        return PROTECTED_PATHS.stream()
+                .filter(uri::equals)
+                .findFirst()
+                .orElse("rota protegida");
     }
 
     /**
