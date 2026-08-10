@@ -10,11 +10,9 @@ import com.florescer.product.api.dto.response.ProductListResponse;
 import com.florescer.product.domain.entity.Product;
 import com.florescer.product.infra.storage.ImageStorageService;
 
-import jakarta.servlet.http.HttpServletRequest;
-
 public class ProductMapper {
 
-    public static ProductGetResponse toGetResponse(Product product, HttpServletRequest request) {
+    public static ProductGetResponse toGetResponse(Product product) {
         return new ProductGetResponse(product.getId(),
                 product.getName(),
                 product.getType(),
@@ -24,7 +22,7 @@ public class ProductMapper {
                 product.getCareRequirements(),
                 product.getAvailability(),
                 product.getStatus(),
-                ImageStorageService.buildImageUrl(request, product.getImagePath()));
+                ImageStorageService.buildImageUrl(product.getImagePath()));
     }
     
     public static Product fromCreateRequest(ProductCreateRequest request, String imagePath) {
@@ -42,7 +40,28 @@ public class ProductMapper {
     }
     
     public static Page<ProductListResponse> toGetAllResponse(Page<Product> products) {
-        return products.map(ProductListResponse::from);
+        return products.map(ProductMapper::toListResponse);
+    }
+
+    /**
+     * A listagem devolve o mesmo formato de imagem que o detalhe.
+     *
+     * <p>Antes o detalhe trazia URL e a listagem trazia só o nome do arquivo,
+     * ambos no campo chamado imageUrl: o cliente precisava saber de qual
+     * endpoint o dado veio para saber como usá-lo.
+     */
+    public static ProductListResponse toListResponse(Product product) {
+        return new ProductListResponse(
+                product.getId(),
+                product.getName(),
+                product.getType(),
+                product.getDescription(),
+                product.getPrice(),
+                product.getQuantityStock(),
+                product.getCareRequirements(),
+                product.getAvailability(),
+                product.getStatus(),
+                ImageStorageService.buildImageUrl(product.getImagePath()));
     }
     
     public static void applyPatch(Product product, ProductPatchRequest request) {

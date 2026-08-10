@@ -16,7 +16,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.florescer.product.domain.exception.personalizadas.FileStorageException;
 
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.log4j.Log4j2;
 
 /**
@@ -92,18 +91,32 @@ public class ImageStorageService {
         }
     }
 
-    public static String buildImageUrl(HttpServletRequest request, String imagePath) {
+    /**
+     * Monta a URL pública da imagem.
+     *
+     * <p>O caminho precisa ser o mesmo que {@code StaticResourceConfig} atende.
+     * Antes daqui saía {@code /images/} enquanto o handler respondia em
+     * {@code /uploads/}, então nenhuma imagem era acessível: o produto vinha com
+     * um endereço que não existia.
+     *
+     * <p>A URL é absoluta porque o frontend roda em outra origem, e uma URL
+     * relativa seria resolvida contra o endereço dele, não contra o da API.
+     *
+     * <p>O contexto da requisição vem do {@code RequestContextHolder}, o que
+     * evita carregar {@code HttpServletRequest} por camadas que não têm nada a
+     * ver com HTTP só para montar um endereço.
+     */
+    public static String buildImageUrl(String imagePath) {
         if (imagePath == null || imagePath.isBlank()) {
             return null;
         }
 
-        String baseUrl = ServletUriComponentsBuilder
-                .fromRequestUri(request)
-                .replacePath(null)
-                .build()
+        return ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/")
+                .path(UPLOAD_FOLDER)
+                .path("/")
+                .path(imagePath)
                 .toUriString();
-
-        return baseUrl + "/images/" + imagePath;
     }
 
     /**

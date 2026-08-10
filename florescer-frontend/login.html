@@ -3,20 +3,33 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Entre na sua conta Florescer." />
   <title>Login - Florescer</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <main class="login-container">
-    <h2>Login</h2>
+    <h1>Entrar</h1>
     <form id="login-form">
-      <input type="email" placeholder="Email" required />
-      <input type="password" placeholder="Senha" required />
+      <!-- label ligado por for/id: sem isso o leitor de tela não anuncia o
+           campo, e o placeholder some assim que a pessoa começa a digitar. -->
+      <label for="email">E-mail</label>
+      <input type="email" id="email" name="email" autocomplete="email" required />
+
+      <label for="password">Senha</label>
+      <input type="password" id="password" name="password" autocomplete="current-password" required />
+
       <button type="submit">Entrar</button>
     </form>
-    <p id="login-error" class="error-message"></p>
+
+    <!-- aria-live faz o leitor de tela anunciar o erro quando ele aparece,
+         em vez de deixá-lo passar despercebido. -->
+    <p id="login-error" class="error-message" role="alert" aria-live="polite"></p>
+
+    <p class="form-footer">Ainda não tem conta? <a href="register.html">Cadastre-se</a></p>
   </main>
 
+  <script src="config.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

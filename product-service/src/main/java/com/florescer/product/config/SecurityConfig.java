@@ -32,6 +32,11 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/swagger").permitAll()
                 .requestMatchers(HttpMethod.GET, "/v1/product", "/v1/product/{id}").permitAll()
+                // A vitrine é pública, então as imagens dos produtos também
+                // precisam ser. Sem isto a listagem responde 200 com URLs que
+                // devolvem 401, e nenhuma foto aparece para quem não entrou.
+                // Só leitura: escrever continua sendo pelo endpoint de upload.
+                .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                 .anyRequest().authenticated()
             )
             // Sem sessão: cada requisição se identifica pelo token. O padrão
