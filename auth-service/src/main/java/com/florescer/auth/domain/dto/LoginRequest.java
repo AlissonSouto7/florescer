@@ -9,8 +9,11 @@ public record LoginRequest(
 		@Email(message = "E-mail inválido")
 		String email,
 
+		// Sem restrição de formato: no login, a senha ou confere ou não confere.
+		// Validar o formato aqui devolveria 400 explicando a política a quem
+		// tenta adivinhar, e trancaria fora quem cadastrou antes de a política
+		// mudar. Senha errada é 401, e só.
 		@NotBlank(message = "A senha é obrigatória")
-		@Size(min = 6, max = 20, message = "A senha deve ter entre 6 e 20 caracteres")
 		String password
 ) {
 

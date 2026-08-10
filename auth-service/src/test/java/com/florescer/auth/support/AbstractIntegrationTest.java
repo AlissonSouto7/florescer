@@ -1,6 +1,7 @@
 package com.florescer.auth.support;
 
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.MySQLContainer;
@@ -15,6 +16,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * <p>O container é estático e compartilhado por toda a suíte, então sobe uma única vez.
  */
 @SpringBootTest
+@ActiveProfiles("test")
 @Testcontainers
 public abstract class AbstractIntegrationTest {
 
