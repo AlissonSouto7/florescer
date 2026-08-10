@@ -17,6 +17,7 @@ import com.florescer.product.api.dto.response.ProductCreateResponse;
 import com.florescer.product.api.dto.response.ProductGetResponse;
 import com.florescer.product.api.dto.response.ProductListResponse;
 import com.florescer.product.api.utils.PageableFactory;
+import com.florescer.product.api.utils.ProductMapper;
 import com.florescer.product.api.utils.SwaggerConstants;
 import com.florescer.product.config.SecurityConfig;
 import com.florescer.product.domain.service.ProductService;
@@ -50,7 +51,9 @@ public class ProductControllerImpl implements ProductController {
         @Parameter(description = "Imagem do produto (JPEG, PNG ou WebP)", required = true)
         MultipartFile image
     ) {
-        ProductCreateResponse product = service.createProduct(request, image);
+        // A tradução entre JSON e domínio acontece aqui, na borda.
+        ProductCreateResponse product = ProductMapper.toCreateResponse(
+                service.createProduct(ProductMapper.toCommand(request), image));
         URI location = URI.create("/v1/product/" + product.id());
         return ResponseEntity.created(location).body(product);
     }
@@ -66,7 +69,7 @@ public class ProductControllerImpl implements ProductController {
     	    @RequestParam(defaultValue = "10") int size,
     	    @RequestParam(defaultValue = "name") String[] sort) {
     	    Pageable pageable = PageableFactory.of(page, size, sort);
-        return ResponseEntity.ok(service.getListProduct(pageable));
+        return ResponseEntity.ok(ProductMapper.toListResponse(service.getListProduct(pageable)));
     }
 
 	@Override
@@ -78,8 +81,7 @@ public class ProductControllerImpl implements ProductController {
     })
 	public ResponseEntity<ProductGetResponse> findById(
 			@Parameter(description = "ID do produto", required = true) UUID id) {
-		ProductGetResponse product = service.getProductById(id);
-		return ResponseEntity.ok(product);
+		return ResponseEntity.ok(ProductMapper.toGetResponse(service.getProductById(id)));
 	}
 
 	@Override
@@ -95,7 +97,7 @@ public class ProductControllerImpl implements ProductController {
     	    ProductPatchRequest request,
     	    @Parameter(description = "Nova imagem do produto (opcional)", required = false)
             MultipartFile image) {
-        service.patchProduct(id, request, image);
+        service.patchProduct(id, ProductMapper.toChanges(request), image);
         return ResponseEntity.noContent().build();
     }
 	

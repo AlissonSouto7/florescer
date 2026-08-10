@@ -1,4 +1,4 @@
-package com.florescer.product.domain.exception.personalizadas;
+package com.florescer.product.domain.exception.custom;
 
 public class FileStorageException extends RuntimeException {
 	private static final long serialVersionUID = 1L;
