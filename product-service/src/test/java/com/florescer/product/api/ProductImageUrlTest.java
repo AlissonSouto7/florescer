@@ -75,16 +75,29 @@ class ProductImageUrlTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("visitante anonimo alcanca a imagem")
     void visitanteAnonimoAlcancaAImagem() throws Exception {
-        criarProduto();
+        String id = criarProduto();
 
-        String imageUrl = mockMvc.perform(get("/v1/product"))
+        // A imagem vem do detalhe deste produto, e não da primeira da listagem:
+        // todos os testes compartilham o banco, e outras classes criam produtos
+        // com caminho de imagem fictício, sem arquivo no disco. Pegar o primeiro
+        // da lista fazia o resultado depender de qual teste rodou antes.
+        String corpo = mockMvc.perform(get("/v1/product/{id}", id))
                 .andReturn().getResponse().getContentAsString();
-        String nomeArquivo = imageUrl.substring(imageUrl.indexOf("/uploads/") + "/uploads/".length());
+        String nomeArquivo = corpo.substring(corpo.indexOf("/uploads/") + "/uploads/".length());
         nomeArquivo = nomeArquivo.substring(0, nomeArquivo.indexOf('"'));
 
         // Sem token: é assim que o navegador de um visitante busca a foto.
         mockMvc.perform(get("/uploads/{arquivo}", nomeArquivo))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("imagem inexistente devolve 404, nao 500")
+    void imagemInexistenteDevolve404() throws Exception {
+        // Acontece de verdade quando o arquivo é removido do disco e o registro
+        // continua no banco. Responder 500 diria que o servidor tem um defeito.
+        mockMvc.perform(get("/uploads/nao-existe.png"))
+                .andExpect(status().isNotFound());
     }
 
     private String criarProduto() throws Exception {
