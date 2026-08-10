@@ -20,6 +20,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 	public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
 		return repository.findByEmail(email)
 				.map(UserAuthenticated::new)
-				.orElseThrow(() -> new EmailNotFoundException("Email Not Found: " + email));
+				// Sem o endereço na mensagem: ela é registrada em log e devolvida
+				// pelo handler, então carregar o valor o espalharia nos dois.
+				.orElseThrow(() -> new EmailNotFoundException("Credenciais inválidas."));
 	}
 }
