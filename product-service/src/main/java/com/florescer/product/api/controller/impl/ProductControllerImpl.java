@@ -7,15 +7,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.florescer.product.api.controller.ProductController;
 import com.florescer.product.api.dto.request.ProductCreateRequest;
 import com.florescer.product.api.dto.request.ProductPatchRequest;
@@ -28,13 +24,11 @@ import com.florescer.product.domain.service.ProductService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -43,7 +37,6 @@ import lombok.RequiredArgsConstructor;
 @SecurityRequirement(name = SecurityConfig.SECURITY)
 public class ProductControllerImpl implements ProductController {
 	
-	private final ObjectMapper objectMapper;
 	private final ProductService service;
 
     @Override
@@ -53,22 +46,15 @@ public class ProductControllerImpl implements ProductController {
         @ApiResponse(responseCode = "400", description = SwaggerConstants.STATUS_400),
         @ApiResponse(responseCode = "500", description = SwaggerConstants.STATUS_500)
     })
-    //enviando string temporariamente para poder enviar as imagens pelo swagger
     public ResponseEntity<ProductCreateResponse> create(
-        @Parameter(description = "JSON com os dados do produto", required = true)
-        @Valid @Schema(implementation = ProductCreateRequest.class) String requestJson,
-        @Parameter(description = "Imagem do produto (JPEG)", required = true)
+        @Parameter(description = "Dados do produto, em JSON", required = true)
+        ProductCreateRequest request,
+        @Parameter(description = "Imagem do produto (JPEG, PNG ou WebP)", required = true)
         MultipartFile image
     ) {
-        try {
-            ProductCreateRequest request = objectMapper.readValue(requestJson, ProductCreateRequest.class);
-            ProductCreateResponse product = service.createProduct(request, image);
-            URI location = URI.create("/v1/product/" + product.id());
-            return ResponseEntity.created(location).body(product);
-
-        } catch (JsonProcessingException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "JSON inválido", e);
-        }
+        ProductCreateResponse product = service.createProduct(request, image);
+        URI location = URI.create("/v1/product/" + product.id());
+        return ResponseEntity.created(location).body(product);
     }
 
 	@Override
@@ -107,17 +93,12 @@ public class ProductControllerImpl implements ProductController {
             @ApiResponse(responseCode = "500", description = SwaggerConstants.STATUS_500)
     })
     public ResponseEntity<Void> updatePartial(@Parameter(description = "ID do produto", required = true) UUID id,
-    	    @Parameter(description = "JSON com os campos a serem atualizados", required = true)
-    	    @Schema(implementation = ProductPatchRequest.class) String patchJson, 
-    	    @Parameter(description = "Nova imagem do produto (opcional)", required = false) 
+    	    @Parameter(description = "Campos a serem atualizados, em JSON", required = true)
+    	    ProductPatchRequest request,
+    	    @Parameter(description = "Nova imagem do produto (opcional)", required = false)
             MultipartFile image) {
-		try {
-	        ProductPatchRequest patchRequest = objectMapper.readValue(patchJson, ProductPatchRequest.class);
-	        service.patchProduct(id, patchRequest, image);
-	        return ResponseEntity.noContent().build();
-	    } catch (JsonProcessingException e) {
-	        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "JSON inválido", e);
-	    }
+        service.patchProduct(id, request, image);
+        return ResponseEntity.noContent().build();
     }
 	
 	@Override

@@ -6,6 +6,8 @@ import com.florescer.product.domain.enums.Status;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
 public record ProductCreateRequest(
@@ -21,11 +23,11 @@ public record ProductCreateRequest(
         @Schema(description = "Descrição do produto", example = SwaggerConstants.DESCRIPTION_EXAMPLE)
         String description,
 
-        @NotNull
+        @NotNull @Positive(message = "Preço deve ser maior que zero")
         @Schema(description = "Preço do produto", example = SwaggerConstants.PRICE_EXAMPLE)
         Double price,
 
-        @NotNull
+        @NotNull @PositiveOrZero(message = "Quantidade em estoque não pode ser negativa")
         @Schema(description = "Quantidade em estoque", example = SwaggerConstants.QUANTITY_EXAMPLE)
         Integer quantityStock,
 

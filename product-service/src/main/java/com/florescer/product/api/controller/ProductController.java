@@ -15,18 +15,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.florescer.product.api.dto.request.ProductCreateRequest;
+import com.florescer.product.api.dto.request.ProductPatchRequest;
 import com.florescer.product.api.dto.response.ProductCreateResponse;
 import com.florescer.product.api.dto.response.ProductGetResponse;
 import com.florescer.product.api.dto.response.ProductListResponse;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 
 @RequestMapping("/v1/product")
 public interface ProductController {
 	
 	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@PreAuthorize("hasRole('ADMIN')")
-	public ResponseEntity<ProductCreateResponse> create(@RequestPart("product") String request, 
+	public ResponseEntity<ProductCreateResponse> create(
+			@RequestPart("product") @Valid ProductCreateRequest request,
 			@RequestPart("image") MultipartFile image);
 	
 	@GetMapping
@@ -37,8 +41,9 @@ public interface ProductController {
 	
 	@PatchMapping(path = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@PreAuthorize("hasRole('ADMIN')")
-	public ResponseEntity<Void> updatePartial(@PathVariable UUID id, @RequestPart("product") String request,
-			@RequestPart(value = "image") MultipartFile image);
+	public ResponseEntity<Void> updatePartial(@PathVariable UUID id,
+			@RequestPart("product") @Valid ProductPatchRequest request,
+			@RequestPart(value = "image", required = false) MultipartFile image);
 	
 	@DeleteMapping("/{id}")
 	@PreAuthorize("hasRole('ADMIN')")
