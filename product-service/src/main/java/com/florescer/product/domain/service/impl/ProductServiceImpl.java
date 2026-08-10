@@ -21,9 +21,10 @@ import com.florescer.product.domain.exception.personalizadas.InvalidPatchExcepti
 import com.florescer.product.domain.exception.personalizadas.ProductNotFoundException;
 import com.florescer.product.domain.service.ProductService;
 import com.florescer.product.infra.repository.ProductRepository;
+import com.florescer.product.infra.storage.FileCleanupOnCommit;
 import com.florescer.product.infra.storage.ImageStorageService;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -32,6 +33,7 @@ import lombok.RequiredArgsConstructor;
 public class ProductServiceImpl implements ProductService {
 
 	private final ImageStorageService imageStorageService;
+	private final FileCleanupOnCommit fileCleanup;
 	private final ProductRepository repository;
 
 	@Override
@@ -48,12 +50,14 @@ public class ProductServiceImpl implements ProductService {
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public Page<ProductListResponse> getListProduct(Pageable pageable) {
 		Page<Product> listProduct = repository.findAll(pageable);
 		return ProductMapper.toGetAllResponse(listProduct);
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public ProductGetResponse getProductById(UUID id) {
 		Product product = getProductOrThrow(id);
 		return ProductMapper.toGetResponse(product);
@@ -73,9 +77,15 @@ public class ProductServiceImpl implements ProductService {
             boolean isSame = imageStorageService.isSameImage(product.getImagePath(), image);
 
             if (!isSame) {
-                imageStorageService.deleteOldImageFromDisk(product.getImagePath());
-                String newFileName = imageStorageService.saveImage(image);
-                product.setImagePath(newFileName);
+                // Grava a nova primeiro: se a escrita falhar, o produto continua
+                // com a imagem que tinha. A ordem inversa perdia as duas quando a
+                // gravação falhava no meio.
+                String imagemAnterior = product.getImagePath();
+                String novoArquivo = imageStorageService.saveImage(image);
+                product.setImagePath(novoArquivo);
+
+                // A antiga só sai depois que o banco confirmar a troca.
+                fileCleanup.deleteAfterCommit(imagemAnterior);
             }
         }
         repository.save(product);
@@ -84,10 +94,13 @@ public class ProductServiceImpl implements ProductService {
 	@Override
 	public void deleteProduct(UUID id) {
 		Product product = getProductOrThrow(id);
-		
-		imageStorageService.deleteOldImageFromDisk(product.getImagePath());
-		
+		String imagem = product.getImagePath();
+
 		repository.delete(product);
+
+		// Se o banco desfizer a remoção, o produto continua existindo e precisa
+		// da imagem: apagar antes deixaria uma referência apontando para o vazio.
+		fileCleanup.deleteAfterCommit(imagem);
 	}
 	
     private Product getProductOrThrow(UUID id) {

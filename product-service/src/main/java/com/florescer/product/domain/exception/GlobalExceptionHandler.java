@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.florescer.product.domain.exception.personalizadas.DatabaseException;
@@ -90,6 +91,22 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(HttpRequestMethodNotSupportedException.class)
 	public ResponseEntity<ApiErrorResponse> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
 		return status(HttpStatus.METHOD_NOT_ALLOWED, "Método não suportado", ex.getMessage());
+	}
+
+	/**
+	 * Arquivo estático inexistente, tipicamente uma imagem de produto que já foi
+	 * removida do disco.
+	 *
+	 * <p>Sem este handler a exceção caía no genérico e virava 500, dizendo ao
+	 * cliente que o servidor tem um defeito quando o recurso é que não existe.
+	 * Também escondia a causa: um 500 não distingue "imagem apagada" de "falha
+	 * real", e as duas situações exigem investigações diferentes.
+	 */
+	@ExceptionHandler(NoResourceFoundException.class)
+	public ResponseEntity<ApiErrorResponse> handleNoResource(NoResourceFoundException ex) {
+		log.warn("Recurso estático não encontrado: {}", ex.getResourcePath());
+		return status(HttpStatus.NOT_FOUND, "Recurso não encontrado",
+				"O arquivo solicitado não existe.");
 	}
 
 	@ExceptionHandler(MaxUploadSizeExceededException.class)

@@ -11,12 +11,11 @@ spring:
     password: ${DB_PASSWORD}
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
-    defer-datasource-initialization: true
-  sql:
-    init:
-      mode: always
+      # O schema pertence as migrations do Flyway. validate faz a aplicacao
+      # recusar subir se as entidades e o banco discordarem, em vez de o
+      # Hibernate alterar tabelas por conta propria.
+      ddl-auto: validate
+    show-sql: false
 
 # RSA KEY PAIR
 # Aceita o conteudo PEM (producao, via env/secret manager) ou um resource

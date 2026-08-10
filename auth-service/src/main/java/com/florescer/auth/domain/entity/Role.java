@@ -7,22 +7,30 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
 @Entity
 @Table(name = "tb_roles")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
+// Igualdade pelo identificador, como em User.
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString
 public class Role {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "role_id")
+	@EqualsAndHashCode.Include
 	private Long roleId;
 	
-	@NotBlank
-	private String name; 
+	@Column(nullable = false, unique = true, length = 50)
+	private String name;
 	
 	public enum Values {
 

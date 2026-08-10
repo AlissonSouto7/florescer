@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -34,7 +35,23 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class ImageStorageService {
 
-    private static final String UPLOAD_FOLDER = "uploads";
+    /** Caminho público das imagens. Fixo: é parte do contrato da API. */
+    private static final String PUBLIC_PATH = "uploads";
+
+    /**
+     * Onde as imagens são gravadas.
+     *
+     * <p>Configurável porque o diretório é estado externo compartilhado: com um
+     * caminho fixo, classes de teste diferentes gravam e apagam arquivos no
+     * mesmo lugar, e o resultado passa a depender da ordem em que rodam. Em
+     * produção, permite apontar para um volume montado em vez do diretório de
+     * trabalho do processo.
+     */
+    private final Path uploadDir;
+
+    public ImageStorageService(@Value("${app.uploads.dir:uploads}") String uploadDir) {
+        this.uploadDir = Paths.get(uploadDir).toAbsolutePath().normalize();
+    }
 
     /** Assinaturas dos formatos aceitos, na ordem em que aparecem no arquivo. */
     private enum ImageType {
@@ -71,7 +88,6 @@ public class ImageStorageService {
             // chega ao sistema de arquivos: nem nome, nem extensão, nem separador.
             String fileName = UUID.randomUUID() + type.extension;
 
-            Path uploadDir = uploadDirectory();
             Path destination = uploadDir.resolve(fileName).normalize();
 
             // O nome é gerado aqui e não teria como escapar, mas a verificação
@@ -113,7 +129,7 @@ public class ImageStorageService {
 
         return ServletUriComponentsBuilder.fromCurrentContextPath()
                 .path("/")
-                .path(UPLOAD_FOLDER)
+                .path(PUBLIC_PATH)
                 .path("/")
                 .path(imagePath)
                 .toUriString();
@@ -182,13 +198,8 @@ public class ImageStorageService {
             return null;
         }
 
-        Path uploadDir = uploadDirectory();
         Path resolved = uploadDir.resolve(fileName).normalize();
         return resolved.startsWith(uploadDir) ? resolved : null;
-    }
-
-    private Path uploadDirectory() {
-        return Paths.get(UPLOAD_FOLDER).toAbsolutePath().normalize();
     }
 
     private String digest(InputStream stream) throws IOException {
