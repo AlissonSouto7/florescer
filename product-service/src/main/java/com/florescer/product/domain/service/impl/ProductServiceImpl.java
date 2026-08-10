@@ -1,30 +1,25 @@
 package com.florescer.product.domain.service.impl;
 
-import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.florescer.product.api.dto.request.ProductCreateRequest;
-import com.florescer.product.api.dto.request.ProductPatchRequest;
-import com.florescer.product.api.dto.response.ProductCreateResponse;
-import com.florescer.product.api.dto.response.ProductGetResponse;
-import com.florescer.product.api.dto.response.ProductListResponse;
-import com.florescer.product.api.utils.ProductMapper;
 import com.florescer.product.domain.entity.Product;
-import com.florescer.product.domain.exception.personalizadas.FileStorageException;
-import com.florescer.product.domain.exception.personalizadas.InvalidPatchException;
-import com.florescer.product.domain.exception.personalizadas.ProductNotFoundException;
+import com.florescer.product.domain.exception.custom.FileStorageException;
+import com.florescer.product.domain.exception.custom.InvalidPatchException;
+import com.florescer.product.domain.exception.custom.ProductNotFoundException;
+import com.florescer.product.domain.model.NewProduct;
+import com.florescer.product.domain.model.ProductChanges;
 import com.florescer.product.domain.service.ProductService;
 import com.florescer.product.infra.repository.ProductRepository;
 import com.florescer.product.infra.storage.FileCleanupOnCommit;
 import com.florescer.product.infra.storage.ImageStorageService;
 
-import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -37,58 +32,60 @@ public class ProductServiceImpl implements ProductService {
 	private final ProductRepository repository;
 
 	@Override
-	public ProductCreateResponse createProduct(ProductCreateRequest request, MultipartFile image) {
-		
-        if (image == null || image.isEmpty()) {
-            throw new FileStorageException("Imagem não enviada ou vazia");
-        }
-		
+	public Product createProduct(NewProduct command, MultipartFile image) {
+		if (image == null || image.isEmpty()) {
+			throw new FileStorageException("Imagem não enviada ou vazia");
+		}
+
 		String imagePath = imageStorageService.saveImage(image);
-		
-		Product product = repository.save((ProductMapper.fromCreateRequest(request, imagePath)));
-		return new ProductCreateResponse(product.getId());
+
+		return repository.save(Product.builder()
+				.name(command.name())
+				.type(command.type())
+				.description(command.description())
+				.price(command.price())
+				.quantityStock(command.quantityStock())
+				.careRequirements(command.careRequirements())
+				.availability(command.availability())
+				.status(command.status())
+				.imagePath(imagePath)
+				.build());
 	}
 
 	@Override
 	@Transactional(readOnly = true)
-	public Page<ProductListResponse> getListProduct(Pageable pageable) {
-		Page<Product> listProduct = repository.findAll(pageable);
-		return ProductMapper.toGetAllResponse(listProduct);
+	public Page<Product> getListProduct(Pageable pageable) {
+		return repository.findAll(pageable);
 	}
 
 	@Override
 	@Transactional(readOnly = true)
-	public ProductGetResponse getProductById(UUID id) {
-		Product product = getProductOrThrow(id);
-		return ProductMapper.toGetResponse(product);
+	public Product getProductById(UUID id) {
+		return getProductOrThrow(id);
 	}
 
 	@Override
-	public void patchProduct(UUID id, ProductPatchRequest request, MultipartFile image) {
+	public void patchProduct(UUID id, ProductChanges changes, MultipartFile image) {
 		Product product = getProductOrThrow(id);
 
-        if (isRequestEmpty(request) && (image == null || image.isEmpty())) {
-        	throw new InvalidPatchException("Nenhum campo foi enviado para atualização.");
-        }
-    
-        ProductMapper.applyPatch(product, request);
+		boolean semImagem = image == null || image.isEmpty();
+		if (changes.isEmpty() && semImagem) {
+			throw new InvalidPatchException("Nenhum campo foi enviado para atualização.");
+		}
 
-        if (image != null && !image.isEmpty()) {
-            boolean isSame = imageStorageService.isSameImage(product.getImagePath(), image);
+		aplicar(product, changes);
 
-            if (!isSame) {
-                // Grava a nova primeiro: se a escrita falhar, o produto continua
-                // com a imagem que tinha. A ordem inversa perdia as duas quando a
-                // gravação falhava no meio.
-                String imagemAnterior = product.getImagePath();
-                String novoArquivo = imageStorageService.saveImage(image);
-                product.setImagePath(novoArquivo);
+		if (!semImagem && !imageStorageService.isSameImage(product.getImagePath(), image)) {
+			// Grava a nova primeiro: se a escrita falhar, o produto continua com
+			// a imagem que tinha. A ordem inversa perdia as duas.
+			String imagemAnterior = product.getImagePath();
+			product.setImagePath(imageStorageService.saveImage(image));
 
-                // A antiga só sai depois que o banco confirmar a troca.
-                fileCleanup.deleteAfterCommit(imagemAnterior);
-            }
-        }
-        repository.save(product);
+			// A antiga só sai depois que o banco confirmar a troca.
+			fileCleanup.deleteAfterCommit(imagemAnterior);
+		}
+
+		repository.save(product);
 	}
 
 	@Override
@@ -102,15 +99,20 @@ public class ProductServiceImpl implements ProductService {
 		// da imagem: apagar antes deixaria uma referência apontando para o vazio.
 		fileCleanup.deleteAfterCommit(imagem);
 	}
-	
-    private Product getProductOrThrow(UUID id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new ProductNotFoundException(id));
-    }
-	
-	private boolean isRequestEmpty(ProductPatchRequest request) {
-        return Stream.of(request.name(), request.type(), request.description(), request.price(),
-                request.quantityStock(), request.careRequirements(), request.availability(), request.status())
-                .allMatch(Objects::isNull);
-    }
+
+	private void aplicar(Product product, ProductChanges changes) {
+		Optional.ofNullable(changes.name()).ifPresent(product::setName);
+		Optional.ofNullable(changes.type()).ifPresent(product::setType);
+		Optional.ofNullable(changes.description()).ifPresent(product::setDescription);
+		Optional.ofNullable(changes.price()).ifPresent(product::setPrice);
+		Optional.ofNullable(changes.quantityStock()).ifPresent(product::setQuantityStock);
+		Optional.ofNullable(changes.careRequirements()).ifPresent(product::setCareRequirements);
+		Optional.ofNullable(changes.availability()).ifPresent(product::setAvailability);
+		Optional.ofNullable(changes.status()).ifPresent(product::setStatus);
+	}
+
+	private Product getProductOrThrow(UUID id) {
+		return repository.findById(id)
+				.orElseThrow(() -> new ProductNotFoundException(id));
+	}
 }

@@ -20,10 +20,10 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.florescer.product.domain.exception.personalizadas.DatabaseException;
-import com.florescer.product.domain.exception.personalizadas.FileStorageException;
-import com.florescer.product.domain.exception.personalizadas.InvalidPatchException;
-import com.florescer.product.domain.exception.personalizadas.ProductNotFoundException;
+import com.florescer.product.domain.exception.custom.DatabaseException;
+import com.florescer.product.domain.exception.custom.FileStorageException;
+import com.florescer.product.domain.exception.custom.InvalidPatchException;
+import com.florescer.product.domain.exception.custom.ProductNotFoundException;
 
 import lombok.extern.log4j.Log4j2;
 

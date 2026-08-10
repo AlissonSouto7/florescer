@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import com.florescer.product.domain.exception.personalizadas.FileStorageException;
+import com.florescer.product.domain.exception.custom.FileStorageException;
 
 import lombok.extern.log4j.Log4j2;
 

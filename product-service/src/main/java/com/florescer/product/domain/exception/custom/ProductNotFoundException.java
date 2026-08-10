@@ -1,4 +1,4 @@
-package com.florescer.product.domain.exception.personalizadas;
+package com.florescer.product.domain.exception.custom;
 
 import java.util.UUID;
 
