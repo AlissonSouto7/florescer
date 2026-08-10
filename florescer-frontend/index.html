@@ -3,20 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Plantas e flores para deixar sua casa mais viva." />
   <title>Florescer - Produtos</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header>
-    <h1>Florescer 🌸</h1>
-    <nav>
-      <a href="login.html">Login</a>
-      <a href="register.html">Registrar</a>
+    <!-- O emoji é decorativo: sem aria-hidden, o leitor de tela lê o nome
+         técnico dele no meio do título. -->
+    <h1>Florescer <span aria-hidden="true">🌸</span></h1>
+    <nav aria-label="Acesso à conta">
+      <a href="login.html">Entrar</a>
+      <a href="register.html">Criar conta</a>
     </nav>
   </header>
 
-  <main id="product-list" class="product-list"></main>
+  <main>
+    <h2 class="visually-hidden">Produtos disponíveis</h2>
+    <div id="product-list" class="product-list" aria-live="polite"></div>
+  </main>
 
+  <script src="config.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

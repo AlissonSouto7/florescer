@@ -4,9 +4,7 @@ import java.net.URI;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,6 +16,7 @@ import com.florescer.product.api.dto.request.ProductPatchRequest;
 import com.florescer.product.api.dto.response.ProductCreateResponse;
 import com.florescer.product.api.dto.response.ProductGetResponse;
 import com.florescer.product.api.dto.response.ProductListResponse;
+import com.florescer.product.api.utils.PageableFactory;
 import com.florescer.product.api.utils.SwaggerConstants;
 import com.florescer.product.config.SecurityConfig;
 import com.florescer.product.domain.service.ProductService;
@@ -28,7 +27,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -67,7 +65,7 @@ public class ProductControllerImpl implements ProductController {
     	    @RequestParam(defaultValue = "0") int page,
     	    @RequestParam(defaultValue = "10") int size,
     	    @RequestParam(defaultValue = "name") String[] sort) {
-    	    Pageable pageable = PageRequest.of(page, size, Sort.by(sort));
+    	    Pageable pageable = PageableFactory.of(page, size, sort);
         return ResponseEntity.ok(service.getListProduct(pageable));
     }
 
@@ -79,8 +77,8 @@ public class ProductControllerImpl implements ProductController {
         @ApiResponse(responseCode = "500", description = "Erro interno no servidor")
     })
 	public ResponseEntity<ProductGetResponse> findById(
-			@Parameter(description = "ID do produto", required = true) UUID id, HttpServletRequest request) {
-		ProductGetResponse product = service.getProductById(id, request);
+			@Parameter(description = "ID do produto", required = true) UUID id) {
+		ProductGetResponse product = service.getProductById(id);
 		return ResponseEntity.ok(product);
 	}
 

@@ -3,21 +3,37 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Registrar - Florescer</title>
+  <meta name="description" content="Crie sua conta na Florescer." />
+  <title>Criar conta - Florescer</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <main class="register-container">
-    <h2>Crie sua conta</h2>
+    <h1>Criar conta</h1>
     <form id="register-form">
-      <input type="text" placeholder="Nome" required />
-      <input type="email" placeholder="Email" required />
-      <input type="password" placeholder="Senha" required />
-      <button type="submit">Registrar</button>
+      <label for="name">Nome</label>
+      <input type="text" id="name" name="name" autocomplete="name" minlength="3" maxlength="50" required />
+
+      <label for="email">E-mail</label>
+      <input type="email" id="email" name="email" autocomplete="email" required />
+
+      <label for="password">Senha</label>
+      <!-- minlength espelha a regra do servidor, que é quem de fato decide.
+           Aqui serve só para avisar antes de enviar. -->
+      <input type="password" id="password" name="password" autocomplete="new-password"
+             minlength="12" maxlength="64" required
+             aria-describedby="password-hint" />
+      <small id="password-hint">Use ao menos 12 caracteres. Uma frase curta funciona bem e é fácil de lembrar.</small>
+
+      <button type="submit">Criar conta</button>
     </form>
-    <p id="register-error" class="error-message"></p>
+
+    <p id="register-error" class="error-message" role="alert" aria-live="polite"></p>
+
+    <p class="form-footer">Já tem conta? <a href="login.html">Entrar</a></p>
   </main>
 
+  <script src="config.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

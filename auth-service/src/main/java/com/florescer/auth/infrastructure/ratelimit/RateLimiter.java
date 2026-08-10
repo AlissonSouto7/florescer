@@ -1,5 +1,6 @@
 package com.florescer.auth.infrastructure.ratelimit;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -26,10 +27,21 @@ public class RateLimiter {
     private final Map<String, Window> windows = new ConcurrentHashMap<>();
     private final int maxAttempts;
     private final Duration window;
+    private final Clock clock;
 
     public RateLimiter(int maxAttempts, Duration window) {
+        this(maxAttempts, window, Clock.systemUTC());
+    }
+
+    /**
+     * O relógio é injetável para que a expiração possa ser verificada movendo o
+     * tempo em vez de esperando por ele. Um teste que dorme para ver a janela
+     * vencer é lento e, pior, falha sozinho quando a máquina está ocupada.
+     */
+    public RateLimiter(int maxAttempts, Duration window, Clock clock) {
         this.maxAttempts = maxAttempts;
         this.window = window;
+        this.clock = clock;
     }
 
     /**
@@ -40,7 +52,7 @@ public class RateLimiter {
      * cenário de um ataque automatizado.
      */
     public boolean tryAcquire(String key) {
-        Instant now = Instant.now();
+        Instant now = clock.instant();
 
         Window updated = windows.compute(key, (k, current) -> {
             if (current == null || now.isAfter(current.startedAt().plus(window))) {
@@ -62,7 +74,7 @@ public class RateLimiter {
         if (current == null) {
             return 0;
         }
-        long remaining = Duration.between(Instant.now(), current.startedAt().plus(window)).getSeconds();
+        long remaining = Duration.between(clock.instant(), current.startedAt().plus(window)).getSeconds();
         return Math.max(remaining, 0);
     }
 
@@ -74,7 +86,7 @@ public class RateLimiter {
      * de esgotar a memória do serviço.
      */
     public void evictExpired() {
-        Instant now = Instant.now();
+        Instant now = clock.instant();
         windows.entrySet().removeIf(e -> now.isAfter(e.getValue().startedAt().plus(window)));
     }
 

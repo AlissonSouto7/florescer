@@ -21,7 +21,6 @@ import com.florescer.product.api.dto.response.ProductCreateResponse;
 import com.florescer.product.api.dto.response.ProductGetResponse;
 import com.florescer.product.api.dto.response.ProductListResponse;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 @RequestMapping("/v1/product")
@@ -37,7 +36,7 @@ public interface ProductController {
 	public ResponseEntity<Page<ProductListResponse>> listAll(int page, int size, String[] sort);
 	
 	@GetMapping("/{id}")
-	public ResponseEntity<ProductGetResponse> findById(@PathVariable UUID id, HttpServletRequest request);
+	public ResponseEntity<ProductGetResponse> findById(@PathVariable UUID id);
 	
 	@PatchMapping(path = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@PreAuthorize("hasRole('ADMIN')")
