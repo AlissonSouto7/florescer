@@ -16,6 +16,7 @@ import com.florescer.auth.domain.dto.RegisterResponse;
 import com.florescer.auth.domain.entity.Role;
 import com.florescer.auth.domain.entity.User;
 import com.florescer.auth.exception.custom.EmailAlreadyRegisteredException;
+import com.florescer.auth.infrastructure.logging.SensitiveData;
 import com.florescer.auth.infrastructure.security.JwtServiceImpl;
 
 import jakarta.validation.Valid;
@@ -32,10 +33,13 @@ public class AuthServiceImpl implements AuthService {
 	private final PasswordEncoder passwordEncoder;
 	private final JwtServiceImpl jwtService;
 	private final AuthenticationManager authenticationManager;
+	private final SensitiveData sensitiveData;
 
 	@Override
 	public RegisterResponse register(@Valid RegisterRequest request) {
-		log.info("Tentativa de registro com email: {}", request.email());
+		// O pseudônimo permite acompanhar tentativas do mesmo e-mail sem gravar
+		// o endereço. Ver SensitiveData.
+		log.info("Tentativa de registro: subject={}", sensitiveData.pseudonymize(request.email()));
 
 		checkAvailableEmail(request.email());
 		User user = registerUser(request);
@@ -47,15 +51,16 @@ public class AuthServiceImpl implements AuthService {
 	@Override
 	public LoginResponse login(@Valid LoginRequest request) {
 
-		log.info("Tentativa de login para email: {}", request.email());
+		String subject = sensitiveData.pseudonymize(request.email());
+		log.info("Tentativa de login: subject={}", subject);
 
 		try {
 			String accessToken = authenticatesGeneratesToken(request);
-			log.info("Login bem-sucedido para email: {}", request.email());
+			log.info("Login bem-sucedido: subject={}", subject);
 			return new LoginResponse(accessToken);
-			
+
 		} catch (BadCredentialsException ex) {
-			log.warn("Falha no login para email: {}", request.email());
+			log.warn("Falha no login: subject={}", subject);
 			throw new BadCredentialsException("Credenciais inválidas.");
 		}
 	}
@@ -70,8 +75,8 @@ public class AuthServiceImpl implements AuthService {
 
 	private void checkAvailableEmail(String email) {
 		if (userRepository.findByEmail(email).isPresent()) {
-			log.warn("E-mail já registrado: {}", email);
-			throw new EmailAlreadyRegisteredException(email);
+			log.warn("Registro recusado, e-mail já em uso: subject={}", sensitiveData.pseudonymize(email));
+			throw new EmailAlreadyRegisteredException();
 		}
 	}
 

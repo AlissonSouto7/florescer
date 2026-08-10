@@ -23,16 +23,26 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(EmailAlreadyRegisteredException.class)
     public ResponseEntity<ApiErrorResponse> handleEmailAlreadyRegistered(EmailAlreadyRegisteredException ex) {
-        log.warn("Tentativa de cadastro com e-mail já registrado: {}", ex.getMessage());
+        // Nem o log nem o corpo repetem o endereço informado. O serviço já
+        // registrou a tentativa com o pseudônimo, que é o que a auditoria usa.
+        log.warn("Registro recusado: e-mail já em uso.");
         return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(new ApiErrorResponse("E-mail já registrado", ex.getMessage()));
+                .body(new ApiErrorResponse("E-mail já registrado",
+                        "Não foi possível concluir o cadastro com os dados informados."));
     }
 
+    /**
+     * Responde como credencial inválida, e não como "usuário não existe".
+     *
+     * <p>Distinguir os dois casos entrega a quem pergunta se um endereço tem
+     * conta, o que permite montar lista de clientes a partir de tentativas de
+     * login. O e-mail também sai da mensagem, porque ela era registrada em log.
+     */
     @ExceptionHandler(EmailNotFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleEmailNotFoundException(EmailNotFoundException ex) {
-        log.warn("Tentativa de login com um email inexistente: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(new ApiErrorResponse("E-mail não encontrado", ex.getMessage()));
+        log.warn("Falha de autenticação: credenciais não conferem.");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ApiErrorResponse("Autenticação falhou", "E-mail ou senha incorretos"));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
