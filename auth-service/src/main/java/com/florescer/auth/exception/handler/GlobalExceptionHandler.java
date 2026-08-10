@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.florescer.auth.exception.custom.EmailAlreadyRegisteredException;
 import com.florescer.auth.exception.custom.EmailNotFoundException;
@@ -120,6 +121,17 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleResponseStatus(ResponseStatusException ex) {
         return ResponseEntity.status(ex.getStatusCode())
                 .body(new ApiErrorResponse("Requisição inválida", ex.getReason()));
+    }
+
+    /**
+     * Rota que não existe. Sem este handler ela cai no genérico e vira 500, o
+     * que transforma um erro do cliente em alarme de erro do servidor e esconde
+     * a diferença entre "endereço errado" e "a aplicação quebrou".
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleNoResource(NoResourceFoundException ex) {
+        log.warn("Rota não encontrada.");
+        return status(HttpStatus.NOT_FOUND, "Recurso não encontrado", "O endereço solicitado não existe.");
     }
 
     @ExceptionHandler(JwtException.class)
