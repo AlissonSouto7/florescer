@@ -12,14 +12,13 @@ import com.florescer.product.api.dto.response.ProductCreateResponse;
 import com.florescer.product.api.dto.response.ProductGetResponse;
 import com.florescer.product.api.dto.response.ProductListResponse;
 
-import jakarta.servlet.http.HttpServletRequest;
 
 public interface ProductService {
 	public ProductCreateResponse createProduct(ProductCreateRequest request, MultipartFile image);
 
 	Page<ProductListResponse> getListProduct(Pageable pageable);
 
-	public ProductGetResponse getProductById(UUID productId, HttpServletRequest request);
+	public ProductGetResponse getProductById(UUID productId);
 
 	public void patchProduct(UUID productId, ProductPatchRequest request, MultipartFile image);
 

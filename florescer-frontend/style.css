@@ -52,6 +52,13 @@ nav a {
   box-shadow: 0 0 10px #ccc;
 }
 
+label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.9rem;
+  color: #33422f;
+}
+
 input, button {
   display: block;
   width: 100%;
@@ -59,9 +66,61 @@ input, button {
   padding: 0.75rem;
   border-radius: 5px;
   border: 1px solid #ccc;
+  box-sizing: border-box;
+}
+
+button[type="submit"] {
+  background-color: #4a7c3f;
+  color: #ffffff;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Sem indicação visual, o botão desabilitado durante o envio parece apenas
+   um clique que não funcionou. */
+button[type="submit"]:disabled {
+  background-color: #9bb394;
+  cursor: progress;
+}
+
+small {
+  display: block;
+  margin: -0.5rem 0 1rem;
+  color: #5a6b56;
+  font-size: 0.8rem;
 }
 
 .error-message {
-  color: red;
+  /* Vermelho mais escuro que o padrão do navegador, para manter contraste
+     legível sobre o fundo claro. */
+  color: #b3261e;
   font-size: 0.9rem;
+  min-height: 1.2rem;
+}
+
+.form-footer {
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* Disponível para leitor de tela, invisível na tela: dá título à seção sem
+   duplicar texto visualmente. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .product-card {
+    width: 100%;
+  }
+
+  .product-list {
+    padding: 1rem;
+  }
 }

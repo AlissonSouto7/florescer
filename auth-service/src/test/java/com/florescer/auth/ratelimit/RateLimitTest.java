@@ -4,7 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -130,17 +134,72 @@ class RateLimitTest extends AbstractIntegrationTest {
     void janelasExpiradasSaoDescartadas() {
         // Sem limpeza, cada endereço que já tentou deixaria uma entrada
         // permanente, e a proteção viraria um jeito de esgotar a memória.
-        RateLimiter limiter = new RateLimiter(5, Duration.ofMillis(1));
+        //
+        // O tempo avança pelo relógio, não pelo cronômetro da máquina: a versão
+        // anterior usava janela de 1 ms e dependia de o relógio virar entre as
+        // duas linhas, o que fazia o teste passar ou falhar conforme a carga.
+        Instant inicio = Instant.parse("2026-01-01T10:00:00Z");
+        MutableClock clock = new MutableClock(inicio);
+        RateLimiter limiter = new RateLimiter(5, Duration.ofMinutes(1), clock);
+
         for (int i = 0; i < 100; i++) {
             limiter.tryAcquire("origem-" + i);
         }
         assertThat(limiter.trackedKeys()).isEqualTo(100);
 
+        clock.advance(Duration.ofMinutes(2));
         limiter.evictExpired();
 
         assertThat(limiter.trackedKeys())
                 .as("janelas vencidas não podem ficar acumuladas")
                 .isZero();
+    }
+
+    @Test
+    @DisplayName("a cota volta quando a janela expira")
+    void cotaVoltaQuandoAJanelaExpira() {
+        MutableClock clock = new MutableClock(Instant.parse("2026-01-01T10:00:00Z"));
+        RateLimiter limiter = new RateLimiter(2, Duration.ofMinutes(1), clock);
+
+        assertThat(limiter.tryAcquire("origem")).isTrue();
+        assertThat(limiter.tryAcquire("origem")).isTrue();
+        assertThat(limiter.tryAcquire("origem"))
+                .as("a terceira tentativa dentro da janela é recusada")
+                .isFalse();
+
+        clock.advance(Duration.ofMinutes(2));
+
+        assertThat(limiter.tryAcquire("origem"))
+                .as("passada a janela, quem foi bloqueado precisa conseguir tentar de novo")
+                .isTrue();
+    }
+
+    /** Relógio que só anda quando o teste manda. */
+    private static final class MutableClock extends Clock {
+        private Instant agora;
+
+        private MutableClock(Instant inicio) {
+            this.agora = inicio;
+        }
+
+        void advance(Duration duracao) {
+            agora = agora.plus(duracao);
+        }
+
+        @Override
+        public Instant instant() {
+            return agora;
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return ZoneOffset.UTC;
+        }
+
+        @Override
+        public Clock withZone(ZoneId zone) {
+            return this;
+        }
     }
 
     private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder login(String email) {

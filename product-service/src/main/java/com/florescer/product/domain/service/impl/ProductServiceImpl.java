@@ -23,7 +23,6 @@ import com.florescer.product.domain.service.ProductService;
 import com.florescer.product.infra.repository.ProductRepository;
 import com.florescer.product.infra.storage.ImageStorageService;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
@@ -55,9 +54,9 @@ public class ProductServiceImpl implements ProductService {
 	}
 
 	@Override
-	public ProductGetResponse getProductById(UUID id, HttpServletRequest request) {
+	public ProductGetResponse getProductById(UUID id) {
 		Product product = getProductOrThrow(id);
-		return ProductMapper.toGetResponse(product, request);
+		return ProductMapper.toGetResponse(product);
 	}
 
 	@Override
