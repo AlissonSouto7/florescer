@@ -37,6 +37,11 @@ updates:
 
   # As actions do pipeline também são dependências, e rodam com acesso ao
   # repositório. Uma action desatualizada é superfície de ataque de supply chain.
+  # As actions são referenciadas por SHA de commit, e não por tag, porque tag é
+  # ponteiro móvel: quem controla o repositório da action pode reapontá-la para
+  # outro código e todo pipeline que a usa passa a executar isso sem ninguém
+  # aprovar. O Dependabot entende o formato "sha # versão" e atualiza os dois,
+  # que é o que torna a prática sustentável.
   - package-ecosystem: github-actions
     directory: /
     schedule:
