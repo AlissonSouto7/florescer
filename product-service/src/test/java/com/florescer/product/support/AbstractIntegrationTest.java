@@ -31,5 +31,23 @@ public abstract class AbstractIntegrationTest {
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
         registry.add("jwt.public-key", RsaTestKeys::publicKeyPem);
+
+        // Diretório próprio por execução. Com o caminho fixo, classes de teste
+        // diferentes gravavam e apagavam arquivos no mesmo lugar, e o resultado
+        // passava a depender da ordem em que rodam: foi assim que um teste
+        // passou aqui e falhou no CI, onde a ordem foi outra.
+        registry.add("app.uploads.dir", () -> UPLOAD_DIR.toString());
+    }
+
+    private static final java.nio.file.Path UPLOAD_DIR = criarDiretorioDeUploads();
+
+    private static java.nio.file.Path criarDiretorioDeUploads() {
+        try {
+            java.nio.file.Path dir = java.nio.file.Files.createTempDirectory("florescer-uploads-");
+            dir.toFile().deleteOnExit();
+            return dir;
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException("Não foi possível criar o diretório de uploads de teste", e);
+        }
     }
 }
