@@ -1,5 +1,6 @@
 package com.florescer.product.api.dto.request;
 
+import java.math.BigDecimal;
 import com.florescer.product.api.utils.SwaggerConstants;
 import com.florescer.product.domain.enums.Status;
 
@@ -31,7 +32,7 @@ public record ProductPatchRequest(
 
         @Positive(message = "Preço deve ser maior que zero")
         @Schema(description = "Preço do produto", example = SwaggerConstants.PRICE_EXAMPLE)
-        Double price,
+        BigDecimal price,
 
         @PositiveOrZero(message = "Quantidade em estoque não pode ser negativa")
         @Schema(description = "Quantidade em estoque", example = SwaggerConstants.QUANTITY_EXAMPLE)

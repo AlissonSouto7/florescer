@@ -1,5 +1,6 @@
 package com.florescer.product.api.dto.response;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 import com.florescer.product.api.utils.SwaggerConstants;
@@ -22,7 +23,7 @@ public record ProductListResponse(
         String description,
 
         @Schema(description = "Preço do produto", example = SwaggerConstants.PRICE_EXAMPLE)
-        Double price,
+        BigDecimal price,
 
         @Schema(description = "Quantidade em estoque", example = SwaggerConstants.QUANTITY_EXAMPLE)
         Integer quantityStock,

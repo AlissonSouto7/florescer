@@ -3,14 +3,11 @@ package com.florescer.product.infra.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.stream.Stream;
 
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
 
@@ -24,9 +21,22 @@ import com.florescer.product.domain.exception.personalizadas.FileStorageExceptio
  */
 class ImageStorageServiceTest {
 
-    private static final Path UPLOAD_DIR = Paths.get("uploads");
+    /**
+     * Diretório próprio, criado e descartado pelo JUnit a cada teste.
+     *
+     * <p>Antes esta classe gravava e apagava arquivos na mesma pasta usada pelos
+     * testes de integração, então o resultado dependia da ordem de execução, que
+     * difere entre máquinas.
+     */
+    @TempDir
+    Path uploadDir;
 
-    private final ImageStorageService service = new ImageStorageService();
+    private ImageStorageService service;
+
+    @BeforeEach
+    void criarServico() {
+        service = new ImageStorageService(uploadDir.toString());
+    }
 
     /** Bytes de arquivos reais, para o serviço ter o que inspecionar. */
     private static final byte[] PNG = {(byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0};
@@ -41,10 +51,10 @@ class ImageStorageServiceTest {
 
         String nomeGravado = service.saveImage(ataque);
 
-        Path destino = UPLOAD_DIR.resolve(nomeGravado).normalize().toAbsolutePath();
+        Path destino = uploadDir.resolve(nomeGravado).normalize().toAbsolutePath();
         assertThat(destino)
                 .as("o arquivo precisa terminar dentro da pasta de uploads")
-                .startsWithRaw(UPLOAD_DIR.toAbsolutePath().normalize());
+                .startsWithRaw(uploadDir.toAbsolutePath().normalize());
         assertThat(nomeGravado)
                 .as("o nome gravado nao pode carregar nenhum componente de caminho")
                 .doesNotContain("..").doesNotContain("/").doesNotContain("\\");
@@ -97,19 +107,4 @@ class ImageStorageServiceTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
-    @AfterEach
-    void limparArquivosGravados() throws IOException {
-        if (!Files.exists(UPLOAD_DIR)) {
-            return;
-        }
-        try (Stream<Path> arquivos = Files.list(UPLOAD_DIR)) {
-            arquivos.filter(Files::isRegularFile).forEach(p -> {
-                try {
-                    Files.deleteIfExists(p);
-                } catch (IOException ignored) {
-                    // arquivo de teste; nao vale falhar a suite por causa da limpeza
-                }
-            });
-        }
-    }
 }

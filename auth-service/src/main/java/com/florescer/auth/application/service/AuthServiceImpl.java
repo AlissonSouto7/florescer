@@ -83,7 +83,7 @@ public class AuthServiceImpl implements AuthService {
 	private User registerUser(@Valid RegisterRequest request) {
 		Role roleBasic = roleRepository.findByName(Role.Values.BASIC.name());
 
-		User user = new User(request, roleBasic);
+		User user = new User(request.name(), request.email(), roleBasic);
 		user.setPassword(passwordEncoder.encode(request.password()));
 
 		return userRepository.save(user);
