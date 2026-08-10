@@ -11,7 +11,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
 
-import com.florescer.product.domain.exception.personalizadas.FileStorageException;
+import com.florescer.product.domain.exception.custom.FileStorageException;
 
 /**
  * O nome e o tipo de um arquivo enviado são informação que o cliente escolhe.

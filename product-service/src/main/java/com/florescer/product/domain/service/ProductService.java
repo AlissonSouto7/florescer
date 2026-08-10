@@ -6,21 +6,29 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.florescer.product.api.dto.request.ProductCreateRequest;
-import com.florescer.product.api.dto.request.ProductPatchRequest;
-import com.florescer.product.api.dto.response.ProductCreateResponse;
-import com.florescer.product.api.dto.response.ProductGetResponse;
-import com.florescer.product.api.dto.response.ProductListResponse;
+import com.florescer.product.domain.entity.Product;
+import com.florescer.product.domain.model.ProductChanges;
+import com.florescer.product.domain.model.NewProduct;
 
-
+/**
+ * Operações de catálogo.
+ *
+ * <p>Fala em termos do próprio domínio: recebe comandos e devolve entidades. Até
+ * aqui a interface era escrita em DTOs da API, o que invertia a dependência
+ * (domínio conhecendo apresentação) e amarrava as duas: mudar o formato do JSON
+ * obrigava a mexer no domínio, e o domínio não servia a nenhum outro consumidor.
+ *
+ * <p>A conversão para JSON acontece na borda, onde ela pertence.
+ */
 public interface ProductService {
-	public ProductCreateResponse createProduct(ProductCreateRequest request, MultipartFile image);
 
-	Page<ProductListResponse> getListProduct(Pageable pageable);
+	Product createProduct(NewProduct command, MultipartFile image);
 
-	public ProductGetResponse getProductById(UUID productId);
+	Page<Product> getListProduct(Pageable pageable);
 
-	public void patchProduct(UUID productId, ProductPatchRequest request, MultipartFile image);
+	Product getProductById(UUID productId);
 
-	public void deleteProduct(UUID productId);
+	void patchProduct(UUID productId, ProductChanges changes, MultipartFile image);
+
+	void deleteProduct(UUID productId);
 }

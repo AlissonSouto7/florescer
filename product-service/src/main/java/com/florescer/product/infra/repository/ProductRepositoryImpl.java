@@ -9,7 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import com.florescer.product.domain.entity.Product;
-import com.florescer.product.domain.exception.personalizadas.DatabaseException;
+import com.florescer.product.domain.exception.custom.DatabaseException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -17,7 +17,7 @@ import lombok.extern.log4j.Log4j2;
 @Repository
 @RequiredArgsConstructor
 @Log4j2	
-public class ProductRestController implements ProductRepository {
+public class ProductRepositoryImpl implements ProductRepository {
 
 	private final ProductJPARepository repository;
 	

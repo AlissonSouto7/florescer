@@ -1,16 +1,56 @@
 package com.florescer.product.api.utils;
-import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 
 import com.florescer.product.api.dto.request.ProductCreateRequest;
 import com.florescer.product.api.dto.request.ProductPatchRequest;
+import com.florescer.product.api.dto.response.ProductCreateResponse;
 import com.florescer.product.api.dto.response.ProductGetResponse;
 import com.florescer.product.api.dto.response.ProductListResponse;
 import com.florescer.product.domain.entity.Product;
+import com.florescer.product.domain.model.NewProduct;
+import com.florescer.product.domain.model.ProductChanges;
 import com.florescer.product.infra.storage.ImageStorageService;
 
-public class ProductMapper {
+/**
+ * Converte entre o contrato HTTP e o domínio.
+ *
+ * <p>A tradução acontece na borda: o serviço recebe comandos e devolve
+ * entidades, sem saber que existe JSON. Antes o próprio serviço chamava este
+ * mapeador, o que fazia o domínio depender da camada de apresentação.
+ */
+public final class ProductMapper {
+
+    private ProductMapper() {
+    }
+
+    public static NewProduct toCommand(ProductCreateRequest request) {
+        return new NewProduct(
+                request.name(),
+                request.type(),
+                request.description(),
+                request.price(),
+                request.quantityStock(),
+                request.careRequirements(),
+                request.availability(),
+                request.status());
+    }
+
+    public static ProductChanges toChanges(ProductPatchRequest request) {
+        return new ProductChanges(
+                request.name(),
+                request.type(),
+                request.description(),
+                request.price(),
+                request.quantityStock(),
+                request.careRequirements(),
+                request.availability(),
+                request.status());
+    }
+
+    public static ProductCreateResponse toCreateResponse(Product product) {
+        return new ProductCreateResponse(product.getId());
+    }
 
     public static ProductGetResponse toGetResponse(Product product) {
         return new ProductGetResponse(product.getId(),
@@ -24,33 +64,16 @@ public class ProductMapper {
                 product.getStatus(),
                 ImageStorageService.buildImageUrl(product.getImagePath()));
     }
-    
-    public static Product fromCreateRequest(ProductCreateRequest request, String imagePath) {
-        return Product.builder()
-                .name(request.name())
-                .type(request.type())
-                .description(request.description())
-                .price(request.price())
-                .quantityStock(request.quantityStock())
-                .careRequirements(request.careRequirements())
-                .availability(request.availability())
-                .status(request.status())
-                .imagePath(imagePath)
-                .build();
-    }
-    
-    public static Page<ProductListResponse> toGetAllResponse(Page<Product> products) {
-        return products.map(ProductMapper::toListResponse);
+
+    public static Page<ProductListResponse> toListResponse(Page<Product> products) {
+        return products.map(ProductMapper::toListItem);
     }
 
     /**
-     * A listagem devolve o mesmo formato de imagem que o detalhe.
-     *
-     * <p>Antes o detalhe trazia URL e a listagem trazia só o nome do arquivo,
-     * ambos no campo chamado imageUrl: o cliente precisava saber de qual
-     * endpoint o dado veio para saber como usá-lo.
+     * A listagem devolve o mesmo formato de imagem que o detalhe: o campo tem o
+     * mesmo nome nos dois endpoints, então precisa ter o mesmo significado.
      */
-    public static ProductListResponse toListResponse(Product product) {
+    private static ProductListResponse toListItem(Product product) {
         return new ProductListResponse(
                 product.getId(),
                 product.getName(),
@@ -62,16 +85,5 @@ public class ProductMapper {
                 product.getAvailability(),
                 product.getStatus(),
                 ImageStorageService.buildImageUrl(product.getImagePath()));
-    }
-    
-    public static void applyPatch(Product product, ProductPatchRequest request) {
-        Optional.ofNullable(request.name()).ifPresent(product::setName);
-        Optional.ofNullable(request.type()).ifPresent(product::setType);
-        Optional.ofNullable(request.description()).ifPresent(product::setDescription);
-        Optional.ofNullable(request.price()).ifPresent(product::setPrice);
-        Optional.ofNullable(request.quantityStock()).ifPresent(product::setQuantityStock);
-        Optional.ofNullable(request.careRequirements()).ifPresent(product::setCareRequirements);
-        Optional.ofNullable(request.availability()).ifPresent(product::setAvailability);
-        Optional.ofNullable(request.status()).ifPresent(product::setStatus);
     }
 }

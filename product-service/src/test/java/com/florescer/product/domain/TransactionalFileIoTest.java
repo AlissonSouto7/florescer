@@ -15,11 +15,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 
-import com.florescer.product.api.dto.request.ProductCreateRequest;
-import com.florescer.product.api.dto.request.ProductPatchRequest;
 import com.florescer.product.domain.enums.Status;
-import com.florescer.product.domain.exception.personalizadas.FileStorageException;
-import com.florescer.product.domain.exception.personalizadas.ProductNotFoundException;
+import com.florescer.product.domain.model.NewProduct;
+import com.florescer.product.domain.model.ProductChanges;
+import com.florescer.product.domain.exception.custom.FileStorageException;
+import com.florescer.product.domain.exception.custom.ProductNotFoundException;
 import com.florescer.product.domain.service.ProductService;
 import com.florescer.product.infra.repository.ProductRepository;
 import com.florescer.product.support.AbstractIntegrationTest;
@@ -117,13 +117,13 @@ class TransactionalFileIoTest extends AbstractIntegrationTest {
     private UUID criarProduto() {
         MockMultipartFile imagem = new MockMultipartFile(
                 "image", "original.png", MediaType.IMAGE_PNG_VALUE, PNG);
-        return service.createProduct(new ProductCreateRequest(
+        return service.createProduct(new NewProduct(
                 "Produto", "Flor", "Descrição", new BigDecimal("10.00"), 5,
-                "Regar", true, Status.ATIVO), imagem).id();
+                "Regar", true, Status.ATIVO), imagem).getId();
     }
 
-    private ProductPatchRequest patchVazio() {
-        return new ProductPatchRequest(null, null, null, null, null, null, null, null);
+    private ProductChanges patchVazio() {
+        return new ProductChanges(null, null, null, null, null, null, null, null);
     }
 
     private Path arquivo(String nome) {
