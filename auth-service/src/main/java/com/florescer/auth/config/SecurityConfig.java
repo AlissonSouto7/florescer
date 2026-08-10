@@ -32,6 +32,12 @@ public class SecurityConfig {
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		return http.csrf(AbstractHttpConfigurer::disable)
+				// Explícito por clareza: o Spring Security já aplica CORS sozinho
+				// quando existe um bean CorsConfigurationSource, e verificar isso
+				// exigiria ler a configuração interna do framework. Deixar visível
+				// evita que alguém remova o bean sem perceber que a cadeia depende
+				// dele. Ver CorsConfig.
+				.cors(Customizer.withDefaults())
 				.authorizeHttpRequests(
 						auth -> auth.requestMatchers("/v1/auth/register", "/v1/auth/login", "/v3/api-docs/**",
 								"/swagger-ui/**", "/swagger-ui.html", "/swagger").permitAll().anyRequest().authenticated())
