@@ -1,6 +1,7 @@
 package com.florescer.auth.logging;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 import org.junit.jupiter.api.DisplayName;
@@ -12,6 +13,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.florescer.auth.support.AbstractIntegrationTest;
 import com.florescer.auth.support.LogCapture;
+import com.florescer.auth.support.TestTokens;
 
 /**
  * O log não pode virar uma segunda base de dados pessoais.
@@ -68,6 +70,24 @@ class NoPiiInLogsTest extends AbstractIntegrationTest {
                     .doesNotContain(EMAIL);
             assertThat(resposta)
                     .as("a resposta de conflito não pode devolver o endereço informado")
+                    .doesNotContain(EMAIL);
+        }
+    }
+
+    @Test
+    @DisplayName("requisicao autenticada nao grava o e-mail do dono do token")
+    void requisicaoAutenticadaNaoGravaEmail() throws Exception {
+        registrar();
+
+        try (LogCapture log = LogCapture.start()) {
+            mockMvc.perform(get("/v1/qualquer-rota-protegida")
+                    .header("Authorization", "Bearer " + TestTokens.valido(EMAIL)));
+
+            // Os outros casos só exercitam login e registro, que são rotas sem
+            // token. O vazamento que existia aqui vinha do caminho autenticado,
+            // por onde nenhum teste passava.
+            assertThat(log.all())
+                    .as("o e-mail no subject do token não pode ser copiado para o log")
                     .doesNotContain(EMAIL);
         }
     }

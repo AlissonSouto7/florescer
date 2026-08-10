@@ -12,13 +12,11 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import org.springframework.web.filter.CorsFilter;
 
 import com.florescer.auth.infrastructure.ratelimit.RateLimitFilter;
 import com.florescer.auth.infrastructure.ratelimit.RateLimiter;
-import com.florescer.auth.infrastructure.security.JwtAuthFilter;
 
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
@@ -31,7 +29,6 @@ import lombok.RequiredArgsConstructor;
 public class SecurityConfig {
 
 	public static final String SECURITY = "bearerAuth";
-	private final JwtAuthFilter jwtAuthFilter;
 	private final RateLimiter authRateLimiter;
 
 	@Bean
@@ -48,7 +45,6 @@ public class SecurityConfig {
 								"/swagger-ui/**", "/swagger-ui.html", "/swagger").permitAll().anyRequest().authenticated())
 				.oauth2ResourceServer(oauth -> oauth.jwt(Customizer.withDefaults()))
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
 				// Antes de tudo: uma tentativa recusada não deve custar consulta
 				// ao banco nem verificação de BCrypt, que é cara de propósito.
 				.addFilterBefore(new RateLimitFilter(authRateLimiter), CorsFilter.class)

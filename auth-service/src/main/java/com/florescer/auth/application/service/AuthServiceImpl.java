@@ -17,7 +17,7 @@ import com.florescer.auth.domain.entity.Role;
 import com.florescer.auth.domain.entity.User;
 import com.florescer.auth.exception.custom.EmailAlreadyRegisteredException;
 import com.florescer.auth.infrastructure.logging.SensitiveData;
-import com.florescer.auth.infrastructure.security.JwtServiceImpl;
+import com.florescer.auth.infrastructure.security.JwtService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +31,7 @@ public class AuthServiceImpl implements AuthService {
 	private final UserRepository userRepository;
 	private final RoleRepository roleRepository;
 	private final PasswordEncoder passwordEncoder;
-	private final JwtServiceImpl jwtService;
+	private final JwtService jwtService;
 	private final AuthenticationManager authenticationManager;
 	private final SensitiveData sensitiveData;
 

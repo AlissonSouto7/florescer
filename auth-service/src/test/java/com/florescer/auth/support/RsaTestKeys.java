@@ -17,6 +17,11 @@ public final class RsaTestKeys {
     private RsaTestKeys() {
     }
 
+    /** O par em si, para testes que precisam assinar um token à mão. */
+    public static KeyPair keyPair() {
+        return KEY_PAIR;
+    }
+
     public static String privateKeyPem() {
         return pem("PRIVATE KEY", KEY_PAIR.getPrivate().getEncoded());
     }
