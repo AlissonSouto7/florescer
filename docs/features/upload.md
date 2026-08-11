@@ -57,6 +57,9 @@ Upload é a superfície mais perigosa de qualquer API. É o único ponto onde al
 | U-6 | médio | `/uploads/**` não estava em `permitAll`: vitrine anônima sem foto | leitura liberada |
 | U-7 | baixo | arquivo inexistente respondia 500 | 404 pelo handler de `NoResourceFoundException` |
 | U-8 | baixo | separador `\` do Windows não tratado na verificação de caminho | normalização cobre os dois |
+| U-11 | alto | **no container, todo upload falhava**: o processo roda como usuário não-root e o Docker cria o ponto de montagem do volume como `root:root` quando o caminho não existe na imagem. O Dockerfile preparava `/app/uploads` enquanto o compose montava `/var/florescer/uploads`, então o diretório preparado nunca era o usado | o caminho real é criado na imagem, com o dono certo, antes de o volume montar; o Docker herda dono e permissão |
+
+O `U-11` só apareceu ao rodar `docker compose up` de verdade: a suíte inteira passava, porque os testes gravam num diretório temporário do host, onde o usuário sempre tem permissão. A resposta era `400 "Erro ao salvar imagem"`, que parece falha de validação e não de permissão, e o motivo real só estava no log do container.
 
 ### Abertos
 
@@ -71,6 +74,7 @@ Upload é a superfície mais perigosa de qualquer API. É o único ponto onde al
 - **HTML disfarçado de imagem é recusado.** `ImageStorageServiceTest` envia `<script>alert(document.cookie)</script>` com `Content-Type: image/png` e a gravação falha.
 - **A imagem sobrevive a uma transação que desfaz** e o arquivo órfão não fica para trás quando ela confirma. `TransactionalFileIoTest` cobre os dois sentidos.
 - **A URL devolvida é a mesma na listagem e no detalhe.** Contrato único, verificado por teste, depois de um período em que os dois endpoints divergiam.
+- **O fluxo funciona na stack do Compose**, não só nos testes. Verificado em 11/08/2026 com `docker compose up`: produto criado com `201`, vitrine anônima listando, e a imagem respondendo `200 image/png` sem token. No navegador, a foto carrega de fato (`naturalWidth > 0`), e não apenas aparece como elemento na página.
 
 ## Testes
 
@@ -121,6 +125,6 @@ SELECT id, name FROM tb_products WHERE image_path IS NULL OR image_path = '';
 
 | Data | O que mudou |
 |---|---|
-| 11/08/2026 | volume nomeado no compose, `nosniff` no nginx |
+| 11/08/2026 | volume nomeado no compose, `nosniff` no nginx, permissão do volume corrigida (U-11) |
 | 10/08/2026 | I/O de disco movida para depois do commit |
 | 09/08/2026 | nome descartado, detecção por magic bytes, caminho confinado, rota unificada |

@@ -89,6 +89,18 @@ cp .env.example .env
 
 Preencha o `.env`. O arquivo explica cada variável; o mínimo é `DB_USERNAME`, `DB_PASSWORD`, `DB_ROOT_PASSWORD` e o caminho das duas chaves.
 
+Duas armadilhas que já custaram tempo aqui:
+
+**Variável de ambiente vence o `.env`.** Se `RSA_PRIVATE_KEY` existir no ambiente do seu sistema, o Compose usa aquela e ignora a do arquivo. O sintoma é a aplicação morrer no boot dizendo que a chave não é um PEM válido, o que faz procurar defeito no `.env`, onde não há nenhum. Confira com `echo $RSA_PRIVATE_KEY` antes de investigar outra coisa.
+
+**A chave em PEM precisa caber numa linha.** O Compose para de ler o valor na primeira quebra de linha. Troque as quebras por `\n` literal:
+
+```bash
+awk 'BEGIN{ORS="\\n"}1' app.key
+```
+
+**Portas em uso.** Se 3306, 5432, 8080, 8081 ou 3000 já estiverem ocupadas por outro projeto, defina `AUTH_DB_PORT`, `PRODUCT_DB_PORT`, `AUTH_PORT`, `PRODUCT_PORT` ou `FRONTEND_PORT` no `.env`. Só o lado do host muda; dentro da rede do Compose nada é afetado.
+
 ### 3. Suba
 
 Tudo de uma vez, com os bancos, os dois serviços e o frontend:
