@@ -66,6 +66,13 @@ public class ProductServiceImpl implements ProductService {
 				.careRequirements(command.careRequirements())
 				.availability(command.availability())
 				.status(command.status())
+				.heightCm(command.heightCm())
+				.light(command.light())
+				.watering(command.watering())
+				.petSafe(command.petSafe())
+				.environment(command.environment())
+				.difficulty(command.difficulty())
+				.includesPot(command.includesPot())
 				.imagePath(imagePath)
 				.build());
 
@@ -147,6 +154,13 @@ public class ProductServiceImpl implements ProductService {
 		Optional.ofNullable(changes.careRequirements()).ifPresent(product::setCareRequirements);
 		Optional.ofNullable(changes.availability()).ifPresent(product::setAvailability);
 		Optional.ofNullable(changes.status()).ifPresent(product::setStatus);
+		Optional.ofNullable(changes.heightCm()).ifPresent(product::setHeightCm);
+		Optional.ofNullable(changes.light()).ifPresent(product::setLight);
+		Optional.ofNullable(changes.watering()).ifPresent(product::setWatering);
+		Optional.ofNullable(changes.petSafe()).ifPresent(product::setPetSafe);
+		Optional.ofNullable(changes.environment()).ifPresent(product::setEnvironment);
+		Optional.ofNullable(changes.difficulty()).ifPresent(product::setDifficulty);
+		Optional.ofNullable(changes.includesPot()).ifPresent(product::setIncludesPot);
 	}
 
 	private Product getProductOrThrow(UUID id) {

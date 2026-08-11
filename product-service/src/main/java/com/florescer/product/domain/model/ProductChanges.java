@@ -6,7 +6,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import com.florescer.product.domain.enums.Difficulty;
+import com.florescer.product.domain.enums.Environment;
+import com.florescer.product.domain.enums.Light;
 import com.florescer.product.domain.enums.Status;
+import com.florescer.product.domain.enums.Watering;
 
 /**
  * Alterações parciais de um produto: campo nulo significa "não mexa".
@@ -22,7 +26,14 @@ public record ProductChanges(
 		Integer quantityStock,
 		String careRequirements,
 		Boolean availability,
-		Status status) {
+		Status status,
+		Integer heightCm,
+		Light light,
+		Watering watering,
+		Boolean petSafe,
+		Environment environment,
+		Difficulty difficulty,
+		Boolean includesPot) {
 
 	/**
 	 * Os nomes dos campos que vieram preenchidos.
@@ -41,11 +52,19 @@ public record ProductChanges(
 		if (careRequirements != null) campos.add("careRequirements");
 		if (availability != null) campos.add("availability");
 		if (status != null) campos.add("status");
+		if (heightCm != null) campos.add("heightCm");
+		if (light != null) campos.add("light");
+		if (watering != null) campos.add("watering");
+		if (petSafe != null) campos.add("petSafe");
+		if (environment != null) campos.add("environment");
+		if (difficulty != null) campos.add("difficulty");
+		if (includesPot != null) campos.add("includesPot");
 		return campos;
 	}
 
 	public boolean isEmpty() {
-		return Stream.of(name, type, description, price, quantityStock, careRequirements, availability, status)
+		return Stream.of(name, type, description, price, quantityStock, careRequirements, availability, status,
+						heightCm, light, watering, petSafe, environment, difficulty, includesPot)
 				.allMatch(Objects::isNull);
 	}
 }

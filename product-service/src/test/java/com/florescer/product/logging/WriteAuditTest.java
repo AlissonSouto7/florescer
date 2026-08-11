@@ -90,7 +90,9 @@ class WriteAuditTest extends AbstractIntegrationTest {
                                 """
                                 {"name":"Samambaia","type":"Planta","description":"Verde e viçosa",
                                  "price":49.90,"quantityStock":3,"careRequirements":"Meia sombra",
-                                 "availability":true,"status":"ATIVO"}
+                                 "availability":true,"status":"ATIVO",
+                 "heightCm":40,"light":"MEIA_SOMBRA","watering":"SEMANAL","petSafe":true,
+                 "environment":"INTERNO","difficulty":"FACIL","includesPot":true}
                                 """.getBytes(StandardCharsets.UTF_8)))
                         .file(new MockMultipartFile("image", "planta.png", MediaType.IMAGE_PNG_VALUE, pngMinimo()))
                         .header("Authorization", "Bearer " + TestTokens.comEscopo("ADMIN")))

@@ -33,7 +33,14 @@ public final class ProductMapper {
                 request.quantityStock(),
                 request.careRequirements(),
                 request.availability(),
-                request.status());
+                request.status(),
+                request.heightCm(),
+                request.light(),
+                request.watering(),
+                request.petSafe(),
+                request.environment(),
+                request.difficulty(),
+                request.includesPot());
     }
 
     public static ProductChanges toChanges(ProductPatchRequest request) {
@@ -45,7 +52,14 @@ public final class ProductMapper {
                 request.quantityStock(),
                 request.careRequirements(),
                 request.availability(),
-                request.status());
+                request.status(),
+                request.heightCm(),
+                request.light(),
+                request.watering(),
+                request.petSafe(),
+                request.environment(),
+                request.difficulty(),
+                request.includesPot());
     }
 
     public static ProductCreateResponse toCreateResponse(Product product) {
@@ -62,7 +76,14 @@ public final class ProductMapper {
                 product.getCareRequirements(),
                 product.getAvailability(),
                 product.getStatus(),
-                ImageStorageService.buildImageUrl(product.getImagePath()));
+                ImageStorageService.buildImageUrl(product.getImagePath()),
+                product.getHeightCm(),
+                product.getLight(),
+                product.getWatering(),
+                product.getPetSafe(),
+                product.getEnvironment(),
+                product.getDifficulty(),
+                product.getIncludesPot());
     }
 
     public static Page<ProductListResponse> toListResponse(Page<Product> products) {
@@ -84,6 +105,13 @@ public final class ProductMapper {
                 product.getCareRequirements(),
                 product.getAvailability(),
                 product.getStatus(),
-                ImageStorageService.buildImageUrl(product.getImagePath()));
+                ImageStorageService.buildImageUrl(product.getImagePath()),
+                product.getHeightCm(),
+                product.getLight(),
+                product.getWatering(),
+                product.getPetSafe(),
+                product.getEnvironment(),
+                product.getDifficulty(),
+                product.getIncludesPot());
     }
 }

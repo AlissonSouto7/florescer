@@ -37,6 +37,26 @@ Leitura pública porque a vitrine precisa funcionar para quem ainda não tem con
 
 O domínio não importa DTO da camada `api`: o serviço recebe `NewProduct` e `ProductChanges`. Sem isso, mudar o formato da API forçaria mudança na regra de negócio.
 
+## O que a planta guarda
+
+| Campo | Obrigatório | Para quê |
+|---|---|---|
+| nome, tipo, descrição | sim | identificação na vitrine |
+| preço | sim | `numeric(10,2)` |
+| estoque, disponibilidade, status | sim | controle de venda |
+| cuidados | sim | texto livre, para o que não cabe em campo estruturado |
+| **altura (cm)** | sim | a pergunta número um de quem compra |
+| **luminosidade** | sim | `SOL_PLENO`, `MEIA_SOMBRA`, `SOMBRA` |
+| **rega** | sim | `DIARIA` a `MENSAL` |
+| **segura para animais** | sim | segurança, não conveniência |
+| **ambiente** | sim | `INTERNO`, `EXTERNO`, `AMBOS` |
+| **dificuldade** | sim | `FACIL`, `MEDIO`, `DIFICIL` |
+| **vem com vaso** | sim | muda o preço percebido |
+
+Os sete últimos são obrigatórios **na API** e aceitam nulo **no banco**. Não é inconsistência: adicionar coluna `NOT NULL` numa tabela que já tem linhas obriga a inventar um valor para as existentes, e altura ou luminosidade inventadas apareceriam na vitrine com a mesma cara de informação verdadeira. Planta cadastrada antes da migration não mostra o campo; planta nova nasce completa.
+
+Luminosidade e segurança para animais têm índice, porque são os filtros previstos para a vitrine.
+
 ## Regras e por quê
 
 **Preço é `BigDecimal` com `numeric(10,2)`.** `Double` é ponto flutuante binário e não representa decimal exatamente: somar itens acumula erro e comparar por igualdade deixa de ser confiável. Com dinheiro isso vira diferença de centavos que ninguém consegue explicar.
