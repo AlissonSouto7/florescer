@@ -13,9 +13,7 @@
 
 ---
 
-Quem vende planta em casa costuma anunciar por foto solta no WhatsApp e no Instagram. O preço se perde na conversa, a mesma planta é oferecida duas vezes, e não existe um lugar para mandar o cliente olhar.
-
-O Florescer é esse lugar: uma vitrine pública onde cada planta tem foto, descrição, cuidados e preço, e uma API para manter esse catálogo atualizado.
+O Florescer é uma vitrine pública onde cada planta tem foto, descrição, cuidados e preço, com uma API para manter esse catálogo atualizado.
 
 ## Estado atual
 
