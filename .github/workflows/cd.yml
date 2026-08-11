@@ -117,7 +117,7 @@ jobs:
       # Sem o guard, um scan que nem chegou a rodar faz o upload falhar
       # procurando um arquivo que não existe, escondendo o erro real.
       - name: Upload scan results
-        uses: github/codeql-action/upload-sarif@c4dd10e44af883a891fe31ced449bcb4a6728b9b # v3
+        uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
         if: steps.scan.outcome == 'success'
         with:
           sarif_file: trivy-${{ matrix.service }}.sarif
