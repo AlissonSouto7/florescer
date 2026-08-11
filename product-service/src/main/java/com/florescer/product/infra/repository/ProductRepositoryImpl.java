@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import com.florescer.product.domain.entity.Product;
+import com.florescer.product.domain.model.ProductFilter;
 import com.florescer.product.domain.exception.custom.DatabaseException;
 
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,16 @@ public class ProductRepositoryImpl implements ProductRepository {
 	@Override
 	public Page<Product> findAll(Pageable pageable) {
 		return repository.findAll(pageable);
+	}
+
+	@Override
+	public Page<Product> findAll(ProductFilter filter, Pageable pageable) {
+		// Sem filtro, a consulta simples evita o custo de montar a Specification
+		// à toa: é o caminho da primeira página da vitrine, o mais acessado.
+		if (filter == null || filter.isEmpty()) {
+			return repository.findAll(pageable);
+		}
+		return repository.findAll(ProductSpecification.from(filter), pageable);
 	}
 
 	@Override
