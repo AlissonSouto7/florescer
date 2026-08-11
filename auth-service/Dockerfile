@@ -3,7 +3,7 @@
 # --- build ---------------------------------------------------------------
 # Usa o Maven Wrapper versionado no repo: a versão do Maven é a mesma aqui,
 # na máquina do dev e no CI.
-FROM eclipse-temurin:17-jdk-alpine AS build
+FROM eclipse-temurin:25-jdk-alpine AS build
 WORKDIR /build
 
 # Copiar só o descritor primeiro faz o Docker reaproveitar o cache de dependências
@@ -17,7 +17,7 @@ RUN ./mvnw --batch-mode --no-transfer-progress -DskipTests package
 
 # --- runtime -------------------------------------------------------------
 # JRE (não JDK) reduz superfície de ataque e tamanho da imagem.
-FROM eclipse-temurin:17-jre-alpine AS runtime
+FROM eclipse-temurin:25-jre-alpine AS runtime
 WORKDIR /app
 
 # Nunca roda como root.
