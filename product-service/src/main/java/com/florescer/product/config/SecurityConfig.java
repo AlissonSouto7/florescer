@@ -31,6 +31,10 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/swagger").permitAll()
+                // Health precisa ser publico porque quem consulta e o orquestrador
+                // do container, que nao tem credencial. So diz UP ou DOWN: o
+                // detalhe esta desligado no application.yml.
+                .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/v1/product", "/v1/product/{id}").permitAll()
                 // A vitrine é pública, então as imagens dos produtos também
                 // precisam ser. Sem isto a listagem responde 200 com URLs que

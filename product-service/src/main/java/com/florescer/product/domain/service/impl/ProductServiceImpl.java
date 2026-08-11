@@ -5,6 +5,8 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,18 +20,34 @@ import com.florescer.product.domain.model.ProductChanges;
 import com.florescer.product.domain.service.ProductService;
 import com.florescer.product.infra.repository.ProductRepository;
 import com.florescer.product.infra.storage.FileCleanupOnCommit;
+import com.florescer.product.infra.logging.SensitiveData;
 import com.florescer.product.infra.storage.ImageStorageService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 
+/**
+ * Regras de produto.
+ *
+ * <p>As operações de escrita registram quem fez, em qual produto e quando. Sem
+ * isso não há como responder "quem apagou este produto", que é a primeira
+ * pergunta de qualquer auditoria, e a resposta não está em lugar nenhum depois
+ * que a linha sai do banco.
+ *
+ * <p>O autor vem do {@code subject} do token, que neste sistema é o e-mail, e
+ * por isso é pseudonimizado antes de ir para o log: auditoria precisa distinguir
+ * um autor do outro, não precisa do endereço de ninguém.
+ */
 @Service
 @Transactional
 @RequiredArgsConstructor
+@Log4j2
 public class ProductServiceImpl implements ProductService {
 
 	private final ImageStorageService imageStorageService;
 	private final FileCleanupOnCommit fileCleanup;
 	private final ProductRepository repository;
+	private final SensitiveData sensitiveData;
 
 	@Override
 	public Product createProduct(NewProduct command, MultipartFile image) {
@@ -39,7 +57,7 @@ public class ProductServiceImpl implements ProductService {
 
 		String imagePath = imageStorageService.saveImage(image);
 
-		return repository.save(Product.builder()
+		Product salvo = repository.save(Product.builder()
 				.name(command.name())
 				.type(command.type())
 				.description(command.description())
@@ -50,6 +68,9 @@ public class ProductServiceImpl implements ProductService {
 				.status(command.status())
 				.imagePath(imagePath)
 				.build());
+
+		log.info("Produto criado: productId={} autor={}", salvo.getId(), autor());
+		return salvo;
 	}
 
 	@Override
@@ -86,6 +107,8 @@ public class ProductServiceImpl implements ProductService {
 		}
 
 		repository.save(product);
+		log.info("Produto alterado: productId={} campos={} imagemTrocada={} autor={}",
+				id, changes.camposPreenchidos(), !semImagem, autor());
 	}
 
 	@Override
@@ -98,6 +121,21 @@ public class ProductServiceImpl implements ProductService {
 		// Se o banco desfizer a remoção, o produto continua existindo e precisa
 		// da imagem: apagar antes deixaria uma referência apontando para o vazio.
 		fileCleanup.deleteAfterCommit(imagem);
+		log.info("Produto removido: productId={} autor={}", id, autor());
+	}
+
+	/**
+	 * Quem está fazendo a operação, sem gravar o endereço em si.
+	 *
+	 * <p>Devolve "anonimo" quando não há autenticação no contexto, o que na
+	 * prática só acontece em chamada interna: as rotas de escrita exigem ADMIN.
+	 */
+	private String autor() {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		if (auth == null || auth.getName() == null) {
+			return "anonimo";
+		}
+		return sensitiveData.pseudonymize(auth.getName());
 	}
 
 	private void aplicar(Product product, ProductChanges changes) {
