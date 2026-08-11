@@ -42,7 +42,12 @@ public class SecurityConfig {
 				.cors(Customizer.withDefaults())
 				.authorizeHttpRequests(
 						auth -> auth.requestMatchers("/v1/auth/register", "/v1/auth/login", "/v3/api-docs/**",
-								"/swagger-ui/**", "/swagger-ui.html", "/swagger").permitAll().anyRequest().authenticated())
+								"/swagger-ui/**", "/swagger-ui.html", "/swagger",
+								// Precisa ser público por definição: quem valida um
+								// token ainda não tem token para se identificar.
+								// Só material público trafega aqui, ver JwksController.
+								"/.well-known/jwks.json")
+								.permitAll().anyRequest().authenticated())
 				.oauth2ResourceServer(oauth -> oauth.jwt(Customizer.withDefaults()))
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				// Antes de tudo: uma tentativa recusada não deve custar consulta

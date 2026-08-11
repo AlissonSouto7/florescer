@@ -22,6 +22,11 @@ spring:
 # classpath:/file: (desenvolvimento). Ver JwtConfig.
 # Sem default de proposito: um default faria a aplicacao subir assinando com
 # uma chave que ninguem escolheu. Falhar no boot e o comportamento correto.
+#
+# A parte PUBLICA deste par e publicada em /.well-known/jwks.json, com um kid
+# derivado da propria chave. Quem valida os tokens deve apontar para esse
+# endereco (JWT_JWKS_URI no product-service) em vez de receber uma copia da
+# chave: assim trocar o par aqui nao exige mexer nos outros servicos.
 jwt:
   private-key: ${RSA_PRIVATE_KEY}
   public-key: ${RSA_PUBLIC_KEY}
