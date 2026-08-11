@@ -17,8 +17,11 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 
@@ -64,9 +67,32 @@ public class JwtConfig {
         }
     }
 
+    /**
+     * O par em formato JWK, com {@code kid} derivado da própria chave.
+     *
+     * <p>O identificador vem do thumbprint (RFC 7638) e não de um valor escolhido
+     * à mão: chaves diferentes produzem identificadores diferentes sem ninguém
+     * precisar coordenar isso. É o que permite publicar a chave nova ao lado da
+     * antiga durante uma troca, em vez de substituir uma pela outra e derrubar
+     * todos os tokens já emitidos.
+     */
     @Bean
-    JwtEncoder jwtEncoder(RSAPrivateKey privateKey, RSAPublicKey publicKey) {
-        JWK jwk = new RSAKey.Builder(publicKey).privateKey(privateKey).build();
+    RSAKey rsaKey(RSAPrivateKey privateKey, RSAPublicKey publicKey) {
+        try {
+            return new RSAKey.Builder(publicKey)
+                    .privateKey(privateKey)
+                    .keyUse(KeyUse.SIGNATURE)
+                    .algorithm(JWSAlgorithm.RS256)
+                    .keyIDFromThumbprint()
+                    .build();
+        } catch (JOSEException ex) {
+            throw new IllegalStateException("Nao foi possivel derivar o kid da chave RSA", ex);
+        }
+    }
+
+    @Bean
+    JwtEncoder jwtEncoder(RSAKey rsaKey) {
+        JWK jwk = rsaKey;
         var jwks = new ImmutableJWKSet<>(new JWKSet(jwk));
         return new NimbusJwtEncoder(jwks);
     }
