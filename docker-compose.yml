@@ -17,6 +17,11 @@ services:
   # Publicados só em 127.0.0.1. Sem o prefixo, o Docker abre a porta em todas as
   # interfaces e passa por cima do firewall do host: um banco de desenvolvimento
   # com senha fraca fica exposto na rede local.
+  #
+  # A porta do host é configurável porque 3306 e 5432 são as portas óbvias e
+  # costumam já estar tomadas por outro projeto na mesma máquina. Só o lado do
+  # host muda: dentro da rede do Compose os serviços continuam se falando pelas
+  # portas padrão, então nada além do acesso externo é afetado.
 
   auth-db:
     # Tag fixa e completa. `mysql` sozinho segue a latest e troca de major sem
@@ -28,7 +33,7 @@ services:
       MYSQL_PASSWORD: ${DB_PASSWORD}
       MYSQL_DATABASE: authdb
     ports:
-      - "127.0.0.1:3306:3306"
+      - "127.0.0.1:${AUTH_DB_PORT:-3306}:3306"
     volumes:
       - auth-db-data:/var/lib/mysql
     healthcheck:
@@ -49,7 +54,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: dbproduct
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${PRODUCT_DB_PORT:-5432}:5432"
     volumes:
       - product-db-data:/var/lib/postgresql/data
     healthcheck:
@@ -79,7 +84,7 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     ports:
-      - "8080:8080"
+      - "${AUTH_PORT:-8080}:8080"
     depends_on:
       auth-db:
         # `service_started` só garante que o container subiu. Com `service_healthy`
@@ -110,7 +115,7 @@ services:
       LOG_PSEUDONYM_SALT: ${LOG_PSEUDONYM_SALT:-}
       UPLOADS_DIR: /var/florescer/uploads
     ports:
-      - "8081:8081"
+      - "${PRODUCT_PORT:-8081}:8081"
     volumes:
       # As imagens ficam fora do container. Sem isto, todo produto cadastrado
       # perde a foto no próximo deploy, e a coluna no banco passa a apontar para
@@ -134,7 +139,7 @@ services:
     build:
       context: ./florescer-frontend
     ports:
-      - "3000:80"
+      - "${FRONTEND_PORT:-3000}:80"
     depends_on:
       auth-service:
         condition: service_healthy

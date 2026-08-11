@@ -26,8 +26,17 @@ RUN addgroup --system florescer && adduser --system --ingroup florescer floresce
 COPY --from=build --chown=florescer:florescer /build/target/*.jar app.jar
 
 # Imagens de produto ficam num volume: container é descartável, upload não.
-RUN mkdir -p /app/uploads && chown florescer:florescer /app/uploads
-VOLUME ["/app/uploads"]
+#
+# O diretório precisa existir na imagem, com o dono certo, ANTES de o volume ser
+# montado. Quando o Docker monta um volume nomeado num caminho que não existe na
+# imagem, ele cria o ponto de montagem como root:root, e o processo, que roda
+# como florescer, não consegue gravar. Existindo antes, o Docker herda dono e
+# permissão daqui.
+#
+# Medido: sem isto, o upload responde 400 "Erro ao salvar imagem" e o log mostra
+# a falha de escrita no caminho do volume.
+RUN mkdir -p /var/florescer/uploads && chown -R florescer:florescer /var/florescer
+VOLUME ["/var/florescer/uploads"]
 
 USER florescer
 EXPOSE 8081
