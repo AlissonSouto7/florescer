@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Formato de log por ambiente.
+
+  Terminal e agregador querem coisas opostas. Quem lê no terminal quer uma linha
+  curta e alinhada; quem consulta num agregador quer campos separados, porque
+  filtrar por campo em texto corrido vira busca por substring, e substring erra
+  quando a mensagem muda de redação.
+
+  Por isso: texto em desenvolvimento, JSON por linha em produção. A mesma
+  aplicação, a mesma chamada de log, saídas diferentes.
+-->
+<configuration>
+
+	<include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+	<springProperty scope="context" name="appName" source="spring.application.name" defaultValue="auth-service"/>
+
+	<!--
+	  Desenvolvimento e teste: legível por humano. O correlationId entra entre
+	  colchetes para dar para seguir uma requisição no meio do que rola na tela.
+	-->
+	<springProfile name="dev,test,default">
+		<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+			<encoder>
+				<pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) [%X{correlationId:-sem-correlacao}] %cyan(%logger{36}) - %msg%n</pattern>
+			</encoder>
+		</appender>
+		<root level="INFO">
+			<appender-ref ref="CONSOLE"/>
+		</root>
+		<!-- Só em dev: mostra o SQL que o Hibernate emite, útil para ver N+1. -->
+		<logger name="org.hibernate.SQL" level="DEBUG"/>
+	</springProfile>
+
+	<!--
+	  Produção: um objeto JSON por linha, que é o formato que agregador lê sem
+	  precisar de parser próprio.
+	-->
+	<springProfile name="prod">
+		<appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
+			<encoder class="net.logstash.logback.encoder.LogstashEncoder">
+				<!-- Identifica a origem quando os dois serviços caem no mesmo índice. -->
+				<customFields>{"service":"${appName}"}</customFields>
+				<!--
+				  Sem isso o MDC não vai para o JSON, e o correlationId, que é o
+				  motivo de existir esta configuração, ficaria de fora.
+				-->
+				<includeMdc>true</includeMdc>
+				<fieldNames>
+					<timestamp>timestamp</timestamp>
+					<level>level</level>
+					<logger>logger</logger>
+					<message>message</message>
+					<thread>thread</thread>
+					<stackTrace>stackTrace</stackTrace>
+				</fieldNames>
+			</encoder>
+		</appender>
+		<root level="INFO">
+			<appender-ref ref="JSON"/>
+		</root>
+		<!--
+		  Em produção o log do framework é ruído: esconde a linha da aplicação
+		  no meio do que o Spring tem a dizer sobre si mesmo.
+		-->
+		<logger name="org.springframework" level="WARN"/>
+		<logger name="org.hibernate" level="WARN"/>
+	</springProfile>
+
+</configuration>

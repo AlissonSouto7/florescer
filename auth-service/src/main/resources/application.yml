@@ -4,6 +4,10 @@ server:
 
 # CONFIGURING THE DATABASE    
 spring: 
+  # Identifica a origem da linha quando os dois servicos caem no mesmo
+  # indice de log. Ver logback-spring.xml.
+  application:
+    name: auth-service
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/authdb
@@ -48,3 +52,34 @@ app:
     enabled: ${ADMIN_ENABLED:false}
     email: ${ADMIN_EMAIL:}
     password: ${ADMIN_PASSWORD:}
+  # Salt do pseudonimo de log. Precisa ser o mesmo entre reinicios para o
+  # pseudonimo continuar comparavel ao longo do tempo, e secreto para que
+  # ninguem consiga testar candidatos contra o log. Sem valor o pseudonimo ainda
+  # funciona, so perde essa resistencia.
+  logging:
+    pseudonym-salt: ${LOG_PSEUDONYM_SALT:}
+
+# ENDPOINT DE SAUDE (Actuator)
+# Exposicao restrita a health, de proposito. O padrao do Actuator publica
+# metrics, env, beans, loggers e mais; env e beans contam a configuracao inteira
+# da aplicacao para quem perguntar, e nada disso e necessario aqui.
+#
+# show-details: never porque o detalhe do health revela componente interno,
+# versao de banco e motivo da falha. Quem opera consulta o log; um health
+# publico so precisa dizer se esta de pe.
+#
+# liveness e readiness sao coisas diferentes: liveness responde se o processo
+# esta vivo (reiniciar resolve), readiness responde se ja pode receber trafego
+# (esperar resolve). Reiniciar um servico que estava so aguardando o banco troca
+# uma espera por uma interrupcao.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+

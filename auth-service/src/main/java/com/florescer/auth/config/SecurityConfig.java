@@ -46,7 +46,11 @@ public class SecurityConfig {
 								// Precisa ser público por definição: quem valida um
 								// token ainda não tem token para se identificar.
 								// Só material público trafega aqui, ver JwksController.
-								"/.well-known/jwks.json")
+								"/.well-known/jwks.json",
+								// Health precisa ser publico porque quem consulta e o
+								// orquestrador do container, que nao tem credencial. So
+								// diz UP ou DOWN: o detalhe esta desligado no yml.
+								"/actuator/health", "/actuator/health/**")
 								.permitAll().anyRequest().authenticated())
 				.oauth2ResourceServer(oauth -> oauth.jwt(Customizer.withDefaults()))
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
