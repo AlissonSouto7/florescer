@@ -1,0 +1,156 @@
+# Sobe a stack inteira: os dois bancos, os dois serviços e o frontend.
+#
+# Antes existiam dois compose separados, cada um subindo apenas o seu banco. Isso
+# tinha três problemas: os dados sumiam a cada `down` porque não havia volume
+# nomeado, não havia como levantar o sistema completo com um comando, e as duas
+# pastas se chamavam `docker`, então o Compose derivava o mesmo nome de projeto
+# para ambas e as redes colidiam.
+#
+# Uso:
+#   cp .env.example .env   e preencha (o par RSA é obrigatório, ver README)
+#   docker compose up --build
+name: florescer
+
+services:
+
+  # --- bancos -------------------------------------------------------------
+  # Publicados só em 127.0.0.1. Sem o prefixo, o Docker abre a porta em todas as
+  # interfaces e passa por cima do firewall do host: um banco de desenvolvimento
+  # com senha fraca fica exposto na rede local.
+
+  auth-db:
+    # Tag fixa e completa. `mysql` sozinho segue a latest e troca de major sem
+    # avisar, e migration escrita para uma versão não vale para a seguinte.
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: authdb
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - auth-db-data:/var/lib/mysql
+    healthcheck:
+      # A porta abrir não significa que o banco aceita conexão: o MySQL escuta
+      # antes de terminar a inicialização, e quem conectar nesse intervalo leva
+      # erro. O ping responde só quando ele está pronto de verdade.
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks: [florescer]
+
+  product-db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: dbproduct
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - product-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d dbproduct"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks: [florescer]
+
+  # --- aplicações ---------------------------------------------------------
+
+  auth-service:
+    build:
+      context: ./auth-service
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      # Dentro da rede do Compose o host é o nome do serviço, não localhost.
+      SPRING_DATASOURCE_URL: jdbc:mysql://auth-db:3306/authdb
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      RSA_PRIVATE_KEY: ${RSA_PRIVATE_KEY}
+      RSA_PUBLIC_KEY: ${RSA_PUBLIC_KEY}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      LOG_PSEUDONYM_SALT: ${LOG_PSEUDONYM_SALT:-}
+      ADMIN_ENABLED: ${ADMIN_ENABLED:-false}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+    ports:
+      - "8080:8080"
+    depends_on:
+      auth-db:
+        # `service_started` só garante que o container subiu. Com `service_healthy`
+        # a aplicação espera o banco aceitar conexão, senão o Flyway falha no boot
+        # e o serviço morre antes de servir a primeira requisição.
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:8080/actuator/health/readiness | grep -q UP"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks: [florescer]
+
+  product-service:
+    build:
+      context: ./product-service
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://product-db:5432/dbproduct
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      # Busca a chave no auth-service em vez de receber uma cópia: trocar a chave
+      # lá passa a valer aqui sem redeploy. Ver JwtDecoderConfig.
+      JWT_JWKS_URI: http://auth-service:8080/.well-known/jwks.json
+      JWT_ISSUER: ${JWT_ISSUER:-auth-service}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      LOG_PSEUDONYM_SALT: ${LOG_PSEUDONYM_SALT:-}
+      UPLOADS_DIR: /var/florescer/uploads
+    ports:
+      - "8081:8081"
+    volumes:
+      # As imagens ficam fora do container. Sem isto, todo produto cadastrado
+      # perde a foto no próximo deploy, e a coluna no banco passa a apontar para
+      # um arquivo que não existe mais.
+      - product-uploads:/var/florescer/uploads
+    depends_on:
+      product-db:
+        condition: service_healthy
+      auth-service:
+        # Precisa do JWKS do auth para validar qualquer token.
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:8081/actuator/health/readiness | grep -q UP"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks: [florescer]
+
+  frontend:
+    build:
+      context: ./florescer-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      product-service:
+        condition: service_healthy
+    networks: [florescer]
+
+# Volumes nomeados: sem eles o banco vive na camada gravável do container e some
+# junto com ele no primeiro `docker compose down`.
+volumes:
+  auth-db-data:
+  product-db-data:
+  product-uploads:
+
+# Rede única e explícita, para os serviços se acharem pelo nome e para o Compose
+# não criar uma rede por projeto derivado do nome da pasta.
+networks:
+  florescer:
+    driver: bridge

@@ -39,6 +39,30 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 
+		<!--
+			Encoder JSON do Logback, usado so no perfil de producao. Escrever o
+			JSON a mao no pattern quebra no primeiro texto com aspas ou quebra de
+			linha, e stacktrace tem as duas coisas.
+		-->
+		<dependency>
+			<groupId>net.logstash.logback</groupId>
+			<artifactId>logstash-logback-encoder</artifactId>
+			<version>8.1</version>
+		</dependency>
+
+		<!--
+			Actuator: usado apenas para health. Sem endpoint de saude o
+			healthcheck do container nao tem o que consultar, o depends_on nao
+			consegue esperar o servico ficar pronto de verdade, e o smoke test
+			pos-deploy vira "abrir a pagina e olhar". A exposicao esta restrita
+			no application.yml: o padrao do Actuator publica bem mais do que
+			este projeto precisa.
+		-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>

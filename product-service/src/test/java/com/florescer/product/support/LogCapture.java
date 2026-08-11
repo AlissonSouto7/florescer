@@ -1,4 +1,4 @@
-package com.florescer.auth.support;
+package com.florescer.product.support;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
