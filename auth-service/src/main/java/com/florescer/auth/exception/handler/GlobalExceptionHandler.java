@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.oauth2.jwt.JwtException;
@@ -46,6 +47,27 @@ public class GlobalExceptionHandler {
         // Nem o log nem o corpo repetem o endereço informado. O serviço já
         // registrou a tentativa com o pseudônimo, que é o que a auditoria usa.
         log.warn("Registro recusado: e-mail já em uso.");
+        return status(HttpStatus.CONFLICT, "E-mail já registrado",
+                "Não foi possível concluir o cadastro com os dados informados.");
+    }
+
+    /**
+     * A trava de unicidade do banco recusando um e-mail repetido.
+     *
+     * <p>O caminho normal já barra e-mail em uso pela consulta prévia. Este só é
+     * alcançado quando duas requisições passam juntas por essa consulta e chegam
+     * juntas ao insert: a segunda esbarra na constraint. É o mesmo motivo de
+     * recusa, então merece a mesma resposta, e não o 500 que a exceção produzia
+     * ao cair no handler genérico.
+     *
+     * <p>A constraint é que garante a unicidade de fato. A consulta prévia serve
+     * para dar uma mensagem melhor no caso comum, não para proteger o dado.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
+        // A mensagem original traz nome de tabela, de constraint e o valor que
+        // colidiu, que neste fluxo é o próprio e-mail.
+        log.warn("Registro recusado pela trava de unicidade do banco.");
         return status(HttpStatus.CONFLICT, "E-mail já registrado",
                 "Não foi possível concluir o cadastro com os dados informados.");
     }
