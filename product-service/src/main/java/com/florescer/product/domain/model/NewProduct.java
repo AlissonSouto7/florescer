@@ -2,7 +2,11 @@ package com.florescer.product.domain.model;
 
 import java.math.BigDecimal;
 
+import com.florescer.product.domain.enums.Difficulty;
+import com.florescer.product.domain.enums.Environment;
+import com.florescer.product.domain.enums.Light;
 import com.florescer.product.domain.enums.Status;
+import com.florescer.product.domain.enums.Watering;
 
 /**
  * Dados para cadastrar um produto.
@@ -20,5 +24,12 @@ public record NewProduct(
 		Integer quantityStock,
 		String careRequirements,
 		Boolean availability,
-		Status status) {
+		Status status,
+		Integer heightCm,
+		Light light,
+		Watering watering,
+		Boolean petSafe,
+		Environment environment,
+		Difficulty difficulty,
+		Boolean includesPot) {
 }

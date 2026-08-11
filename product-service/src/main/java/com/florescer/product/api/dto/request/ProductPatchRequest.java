@@ -2,9 +2,14 @@ package com.florescer.product.api.dto.request;
 
 import java.math.BigDecimal;
 import com.florescer.product.api.utils.SwaggerConstants;
+import com.florescer.product.domain.enums.Difficulty;
+import com.florescer.product.domain.enums.Environment;
+import com.florescer.product.domain.enums.Light;
 import com.florescer.product.domain.enums.Status;
+import com.florescer.product.domain.enums.Watering;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
@@ -46,5 +51,28 @@ public record ProductPatchRequest(
         Boolean availability,
 
         @Schema(description = "Status do produto", example = SwaggerConstants.STATUS_EXAMPLE)
-        Status status) {
+        Status status,
+
+        @Positive(message = "Altura deve ser maior que zero")
+        @Max(value = 1000, message = "Altura não pode passar de 1000 cm")
+        @Schema(description = "Altura aproximada em centímetros", example = "40")
+        Integer heightCm,
+
+        @Schema(description = "Luminosidade suportada", example = "MEIA_SOMBRA")
+        Light light,
+
+        @Schema(description = "Frequência de rega", example = "SEMANAL")
+        Watering watering,
+
+        @Schema(description = "Se convive com gato ou cachorro sem risco", example = "true")
+        Boolean petSafe,
+
+        @Schema(description = "Onde a planta vive bem", example = "INTERNO")
+        Environment environment,
+
+        @Schema(description = "Quanto cuidado a planta exige", example = "FACIL")
+        Difficulty difficulty,
+
+        @Schema(description = "Se o preço inclui o vaso", example = "true")
+        Boolean includesPot) {
 }

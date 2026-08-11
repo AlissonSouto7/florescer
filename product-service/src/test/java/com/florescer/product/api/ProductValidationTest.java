@@ -45,7 +45,9 @@ class ProductValidationTest extends AbstractIntegrationTest {
     void precoNegativoERecusado() throws Exception {
         String json = """
                 {"name":"Rosa","type":"Flor","description":"Bonita","price":-10.0,
-                 "quantityStock":5,"careRequirements":"Regar","availability":true,"status":"ATIVO"}
+                 "quantityStock":5,"careRequirements":"Regar","availability":true,"status":"ATIVO",
+                 "heightCm":40,"light":"MEIA_SOMBRA","watering":"SEMANAL","petSafe":true,
+                 "environment":"INTERNO","difficulty":"FACIL","includesPot":true}
                 """;
 
         mockMvc.perform(criarProduto(json))
@@ -57,7 +59,9 @@ class ProductValidationTest extends AbstractIntegrationTest {
     void estoqueNegativoERecusado() throws Exception {
         String json = """
                 {"name":"Rosa","type":"Flor","description":"Bonita","price":10.0,
-                 "quantityStock":-5,"careRequirements":"Regar","availability":true,"status":"ATIVO"}
+                 "quantityStock":-5,"careRequirements":"Regar","availability":true,"status":"ATIVO",
+                 "heightCm":40,"light":"MEIA_SOMBRA","watering":"SEMANAL","petSafe":true,
+                 "environment":"INTERNO","difficulty":"FACIL","includesPot":true}
                 """;
 
         mockMvc.perform(criarProduto(json))
@@ -69,7 +73,9 @@ class ProductValidationTest extends AbstractIntegrationTest {
     void nomeEmBrancoERecusado() throws Exception {
         String json = """
                 {"name":"   ","type":"Flor","description":"Bonita","price":10.0,
-                 "quantityStock":5,"careRequirements":"Regar","availability":true,"status":"ATIVO"}
+                 "quantityStock":5,"careRequirements":"Regar","availability":true,"status":"ATIVO",
+                 "heightCm":40,"light":"MEIA_SOMBRA","watering":"SEMANAL","petSafe":true,
+                 "environment":"INTERNO","difficulty":"FACIL","includesPot":true}
                 """;
 
         mockMvc.perform(criarProduto(json))
@@ -82,7 +88,9 @@ class ProductValidationTest extends AbstractIntegrationTest {
         String nomeGigante = "a".repeat(300);
         String json = """
                 {"name":"%s","type":"Flor","description":"Bonita","price":10.0,
-                 "quantityStock":5,"careRequirements":"Regar","availability":true,"status":"ATIVO"}
+                 "quantityStock":5,"careRequirements":"Regar","availability":true,"status":"ATIVO",
+                 "heightCm":40,"light":"MEIA_SOMBRA","watering":"SEMANAL","petSafe":true,
+                 "environment":"INTERNO","difficulty":"FACIL","includesPot":true}
                 """.formatted(nomeGigante);
 
         mockMvc.perform(criarProduto(json))
@@ -94,7 +102,9 @@ class ProductValidationTest extends AbstractIntegrationTest {
     void produtoValidoEAceito() throws Exception {
         String json = """
                 {"name":"Rosa vermelha","type":"Flor","description":"Bonita","price":29.9,
-                 "quantityStock":5,"careRequirements":"Regar","availability":true,"status":"ATIVO"}
+                 "quantityStock":5,"careRequirements":"Regar","availability":true,"status":"ATIVO",
+                 "heightCm":40,"light":"MEIA_SOMBRA","watering":"SEMANAL","petSafe":true,
+                 "environment":"INTERNO","difficulty":"FACIL","includesPot":true}
                 """;
 
         mockMvc.perform(criarProduto(json))
