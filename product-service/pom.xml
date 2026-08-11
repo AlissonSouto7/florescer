@@ -19,8 +19,17 @@
 		<jacoco.version>0.8.12</jacoco.version>
 		<!-- Sobrescreve a versao do BOM do Spring Boot: a 1.21.0 nao fala a API do Docker Engine 29+. -->
 		<testcontainers.version>1.21.4</testcontainers.version>
-		<!-- Piso de cobertura do gate de CI. Sobe a cada fase de testes entregue. -->
-		<jacoco.line.coverage.minimum>0.00</jacoco.line.coverage.minimum>
+		<!--
+			Piso de cobertura do gate de CI.
+			Medido em 11/08/2026: linha 83% (308/370), ramo 66% (75/112).
+			O piso fica abaixo do medido de proposito. Um gate colado na medicao
+			reprova por variacao normal (uma classe nova, um refactor que move
+			linhas), e gate que reprova sem motivo acaba sendo desligado.
+			A folga e para absorver ruido, nao para acomodar queda: perder 8
+			pontos de linha e regressao de verdade e deve reprovar.
+		-->
+		<jacoco.line.coverage.minimum>0.75</jacoco.line.coverage.minimum>
+		<jacoco.branch.coverage.minimum>0.55</jacoco.branch.coverage.minimum>
 	</properties>
 	<dependencies>
 
@@ -171,6 +180,17 @@
 											<counter>LINE</counter>
 											<value>COVEREDRATIO</value>
 											<minimum>${jacoco.line.coverage.minimum}</minimum>
+										</limit>
+										<!--
+											Linha sozinha nao percebe ramo de erro sem teste: um
+											try/catch conta como coberto quando so o caminho feliz
+											roda. E justamente no catch que mora o codigo que
+											ninguem exercita e que mais falha quando e acionado.
+										-->
+										<limit>
+											<counter>BRANCH</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>${jacoco.branch.coverage.minimum}</minimum>
 										</limit>
 									</limits>
 								</rule>
