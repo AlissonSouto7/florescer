@@ -25,12 +25,17 @@ springdoc:
     path: /swagger
 
 # CHAVE PUBLICA DE VALIDACAO DO JWT
-# Aceita o conteudo PEM (producao, via env/secret manager) ou um resource
-# classpath:/file: (desenvolvimento). Ver JwtDecoderConfig.
-# Sem default de proposito: subir sem a chave configurada aceitaria qualquer
-# token, entao falhar no boot e o comportamento correto.
+# COMO ESTE SERVICO DESCOBRE A CHAVE QUE VALIDA OS TOKENS
+# Duas formas, e jwks-uri ganha quando as duas estao preenchidas:
+#   jwks-uri     busca a chave no auth-service pelo kid do token. Trocar a chave
+#                la passa a valer aqui sem redeploy. Preferir esta.
+#   public-key   uma chave fixa em PEM (env/secret manager) ou um resource
+#                classpath:/file:. Sem rotacao sem redeploy.
+# Se nenhuma das duas estiver configurada o servico falha ao subir, de proposito:
+# sem chave nao ha o que validar, e subir assim seria pior que nao subir.
 jwt:
-  public-key: ${RSA_PUBLIC_KEY}
+  public-key: ${RSA_PUBLIC_KEY:}
+  jwks-uri: ${JWT_JWKS_URI:}
   issuer: ${JWT_ISSUER:auth-service}
 
 # ORIGENS PERMITIDAS PELO NAVEGADOR (CORS)
