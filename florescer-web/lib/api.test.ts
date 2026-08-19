@@ -22,9 +22,20 @@ function respostaCom(corpo: unknown, status = 200): Response {
   } as Response;
 }
 
-/** A URL que o código realmente pediu na última chamada. */
+/** O endereço cru que o código passou ao fetch, do jeito que ele passou. */
+function enderecoChamado(mock: ReturnType<typeof vi.fn>): string {
+  return mock.mock.calls[0][0] as string;
+}
+
+/**
+ * A URL que o código realmente pediu, resolvida contra um domínio qualquer.
+ *
+ * A base existe só para o parser: no navegador as chamadas são caminhos
+ * relativos, e `new URL` sem base rejeita caminho relativo. Qual é o domínio não
+ * importa aqui, e é justamente esse o ponto (ver o caso "mesma origem").
+ */
 function urlChamada(mock: ReturnType<typeof vi.fn>): URL {
-  return new URL(mock.mock.calls[0][0] as string);
+  return new URL(enderecoChamado(mock), 'http://loja.local');
 }
 
 let fetchFalso: ReturnType<typeof vi.fn>;
@@ -38,11 +49,46 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+describe('tudo sai pela mesma origem', () => {
+  /**
+   * Este é o caso que protege a decisão de arquitetura.
+   *
+   * O navegador fala só com o domínio do site, e o servidor do Next repassa para
+   * as APIs pela rede interna. Isso é o que permite manter `auth-service` e
+   * `product-service` fora da internet, com uma porta exposta em vez de três.
+   *
+   * Se alguém voltar a montar a URL com um host (uma `NEXT_PUBLIC_API_URL`
+   * qualquer), nada quebra na tela em desenvolvimento: as portas estão abertas
+   * na máquina de quem programa. O estrago aparece em produção, onde as APIs não
+   * estão publicadas, e a essa altura já foi para o ar.
+   */
+  const chamadas: Array<[string, () => Promise<unknown>]> = [
+    ['listar', () => listarPlantas({ light: 'SOMBRA' })],
+    ['detalhe', () => buscarPlanta('id-1')],
+    ['login', () => entrar('a@b.com', 'senha').catch(() => null)],
+    ['cadastrar', () => salvarPlanta({}, null, 'tok')],
+    ['editar', () => alterarPlanta('id-1', {}, null, 'tok')],
+    ['excluir', () => excluirPlanta('id-1', 'tok')],
+  ];
+
+  it.each(chamadas)('%s usa caminho relativo, sem host', async (_nome, chamar) => {
+    fetchFalso.mockResolvedValue(respostaCom({ accessToken: 't' }));
+    await chamar();
+
+    const endereco = enderecoChamado(fetchFalso);
+    expect(endereco.startsWith('/')).toBe(true);
+    expect(endereco).not.toMatch(/^https?:\/\//);
+    expect(endereco).not.toContain('localhost');
+    expect(endereco).not.toContain('product-service');
+    expect(endereco).not.toContain('auth-service');
+  });
+});
+
 describe('listarPlantas: o que vai na query', () => {
   it('sempre envia página e tamanho, mesmo sem filtro', async () => {
     await listarPlantas();
     const url = urlChamada(fetchFalso);
-    expect(url.pathname).toBe('/v1/product');
+    expect(url.pathname).toBe('/api/product');
     expect(url.searchParams.get('page')).toBe('0');
     expect(url.searchParams.get('size')).toBe('12');
   });
@@ -140,6 +186,30 @@ describe('entrar', () => {
     fetchFalso.mockResolvedValue(respostaCom({}, 404));
     await expect(entrar('naoexiste@b.com', 'x')).rejects.toThrow('E-mail ou senha incorretos.');
   });
+
+  it('não chama de "senha errada" o que é falha do sistema', async () => {
+    /**
+     * Isto custou uma hora de diagnóstico numa mudança de infraestrutura.
+     *
+     * Uma configuração errada de CORS fazia o login responder 403 "Invalid CORS
+     * request". A tela dizia "E-mail ou senha incorretos", então a conclusão
+     * óbvia era senha errada, e a senha estava certa. Para a vendedora seria
+     * pior: ela tentaria de novo, trocaria a senha, e continuaria sem entrar.
+     *
+     * A mensagem genérica existe para não revelar se a conta existe, e isso vale
+     * só para 401 e 404. Qualquer outro status é problema do sistema, e dizer
+     * isso não entrega informação nenhuma sobre a conta.
+     */
+    for (const status of [403, 429, 500, 502, 503]) {
+      fetchFalso.mockResolvedValue(respostaCom({}, status));
+      await expect(entrar('a@b.com', 'certa')).rejects.toThrow(/não foi possível entrar/i);
+    }
+  });
+
+  it('menciona o código do erro, para quem for investigar', async () => {
+    fetchFalso.mockResolvedValue(respostaCom({}, 403));
+    await expect(entrar('a@b.com', 'certa')).rejects.toThrow(/403/);
+  });
 });
 
 describe('salvar, alterar e excluir', () => {
@@ -174,18 +244,18 @@ describe('salvar, alterar e excluir', () => {
   it('cadastra com POST e edita com PATCH no id certo', async () => {
     await salvarPlanta(DADOS, FOTO, 'tok');
     expect((fetchFalso.mock.calls[0][1] as RequestInit).method).toBe('POST');
-    expect(urlChamada(fetchFalso).pathname).toBe('/v1/product');
+    expect(urlChamada(fetchFalso).pathname).toBe('/api/product');
 
     fetchFalso.mockClear();
     await alterarPlanta('id-1', DADOS, null, 'tok');
     expect((fetchFalso.mock.calls[0][1] as RequestInit).method).toBe('PATCH');
-    expect(urlChamada(fetchFalso).pathname).toBe('/v1/product/id-1');
+    expect(urlChamada(fetchFalso).pathname).toBe('/api/product/id-1');
   });
 
   it('exclui pelo id, com DELETE', async () => {
     await excluirPlanta('id-1', 'tok');
     expect((fetchFalso.mock.calls[0][1] as RequestInit).method).toBe('DELETE');
-    expect(urlChamada(fetchFalso).pathname).toBe('/v1/product/id-1');
+    expect(urlChamada(fetchFalso).pathname).toBe('/api/product/id-1');
   });
 
   it('leva o token nas três, senão a API responde 401', async () => {

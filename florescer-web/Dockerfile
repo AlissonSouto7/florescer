@@ -17,20 +17,22 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Os endereços das APIs entram como argumento porque o Next embute as variáveis
-# NEXT_PUBLIC_ no JavaScript que vai para o navegador, durante o build. Passá-las
-# só em runtime não teria efeito: o valor já estaria compilado.
-ARG NEXT_PUBLIC_PRODUCT_API=http://localhost:8081
-ARG NEXT_PUBLIC_AUTH_API=http://localhost:8080
-ARG NEXT_PUBLIC_WHATSAPP=
-# O endereco interno tambem entra no build: o next.config o usa para autorizar
-# de quais hosts o otimizador de imagem pode carregar, e essa lista e resolvida
-# na hora do build.
-ARG PRODUCT_API=http://localhost:8081
-ENV NEXT_PUBLIC_PRODUCT_API=$NEXT_PUBLIC_PRODUCT_API \
-    NEXT_PUBLIC_AUTH_API=$NEXT_PUBLIC_AUTH_API \
-    NEXT_PUBLIC_WHATSAPP=$NEXT_PUBLIC_WHATSAPP \
-    PRODUCT_API=$PRODUCT_API \
+# Só os endereços INTERNOS entram no build, e é isso que torna a imagem a mesma
+# em qualquer ambiente: são nomes de serviço da rede do Docker, iguais em dev,
+# staging e produção. O endereço público não aparece em lugar nenhum, porque o
+# navegador fala apenas com o domínio do próprio site.
+#
+# Eles precisam ser ARG, e não só variável de runtime: o Next resolve o destino
+# dos rewrites durante o build. Passar só no `environment` do container não tem
+# efeito nenhum, e a falha é silenciosa.
+#
+# O número do WhatsApp NÃO está aqui de propósito: ele é lido em runtime, num
+# componente de servidor, então trocar de número é mexer no ambiente do
+# container, sem reconstruir imagem.
+ARG PRODUCT_API=http://product-service:8081
+ARG AUTH_API=http://auth-service:8080
+ENV PRODUCT_API=$PRODUCT_API \
+    AUTH_API=$AUTH_API \
     NEXT_TELEMETRY_DISABLED=1
 
 RUN npm run build

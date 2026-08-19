@@ -30,15 +30,24 @@ Vitrine pública onde cada planta tem foto, descrição, cuidados e preço, com 
 
 ## Arquitetura
 
-Dois serviços independentes. O catálogo não consulta o serviço de identidade a cada requisição: ele valida a assinatura do token por conta própria, buscando a chave pública uma vez.
+Dois serviços independentes atrás do frontend. O navegador fala **só com o domínio do site**: o servidor do Next repassa as chamadas para as APIs pela rede interna, então em produção uma única porta fica exposta, e não três. O catálogo não consulta o serviço de identidade a cada requisição: valida a assinatura do token por conta própria, buscando a chave pública uma vez.
 
 ```
                           navegador
                               │
-              ┌───────────────┴───────────────┐
+                              │  só esta porta é pública
+                              ▼
+                  ┌───────────────────────┐
+                  │     florescer-web     │
+                  │         :3000         │
+                  │  vitrine, painel e    │
+                  │  proxy para as APIs   │
+                  └───────────┬───────────┘
+                              │
+        ── rede interna ──────┴──────────────────
               │                               │
-          login da vendedora                catálogo
-              │                               │
+          /api/auth                      /api/product
+              │                          /uploads
               ▼                               ▼
    ┌──────────────────┐            ┌────────────────────┐
    │   auth-service   │            │  product-service   │
@@ -57,7 +66,9 @@ Dois serviços independentes. O catálogo não consulta o serviço de identidade
       └──────────┘                     └──────────┘
 ```
 
-Consequência prática: o catálogo continua no ar mesmo se o serviço de identidade cair, e trocar a chave de assinatura não exige redeploy dos dois lados.
+Três consequências práticas: o catálogo continua no ar mesmo se o serviço de identidade cair; trocar a chave de assinatura não exige redeploy dos dois lados; e, como nenhum endereço público fica embutido no build, a mesma imagem roda em qualquer ambiente.
+
+Em desenvolvimento as portas das APIs ficam abertas, para dar acesso ao Swagger. Em produção ([`docker-compose.prod.yml`](docker-compose.prod.yml)) só a do frontend é publicada, e ainda assim apenas em `127.0.0.1`, atrás do proxy que faz o HTTPS.
 
 ## Stack
 
@@ -121,13 +132,13 @@ Cada serviço tem piso de cobertura obrigatório, verificado no CI.
 |---|---|---|---|---|
 | auth-service | 62 | 89% | 70% | 80% / 55% |
 | product-service | 101 | 85% | 68% | 75% / 55% |
-| florescer-web | 104 | 97% | 90% | 93% / 85% |
+| florescer-web | 112 | 98% | 92% | 93% / 85% |
 
 Os serviços rodam contra MySQL e PostgreSQL reais via Testcontainers, então Docker precisa estar ativo. Banco em memória não é usado: SQL específico, tipo `NUMERIC` e comportamento de transação diferem justamente onde os defeitos aparecem.
 
 Os números do `florescer-web` cobrem `lib/` e `components/`. As páginas de `app/` não têm teste, e aparecem com zero no relatório de propósito.
 
-Teste que passa de primeira é suspeito. A suíte do frontend foi validada quebrando o código de propósito, 24 vezes, uma mutação por vez: as 24 foram acusadas. O que cada arquivo protege está em [`docs/features/vitrine.md`](docs/features/vitrine.md).
+Teste que passa de primeira é suspeito. A suíte do frontend foi validada quebrando o código de propósito, uma mutação por vez: todas foram acusadas. O que cada arquivo protege está em [`docs/features/vitrine.md`](docs/features/vitrine.md).
 
 ## API
 

@@ -2,7 +2,7 @@
 
 A interface: onde quem compra escolhe a planta e onde quem vende cadastra.
 
-**Onde fica**: `florescer-web`, porta 3000, Next.js 16 com React 19.
+**Onde fica**: `florescer-web`, porta 3000, Next.js 16 com React 19. Também é o proxy: o navegador fala só com este domínio, e as chamadas para `/api/**` e `/uploads/**` são repassadas às APIs pela rede interna.
 **Status**: funcional.
 **Última revisão**: 19/08/2026.
 
@@ -41,6 +41,20 @@ A interface: onde quem compra escolhe a planta e onde quem vende cadastra.
 
 **A exclusão confirma dizendo o nome da planta.** "Tem certeza?" sozinho é fácil de clicar no automático, e `DELETE` não tem volta.
 
+## O navegador fala só com este domínio
+
+As chamadas do navegador vão para `/api/product`, `/api/auth` e `/uploads`, no domínio do próprio site, e o servidor do Next repassa para os serviços. Três motivos, em ordem de importância:
+
+1. **As APIs não precisam ser públicas.** Em produção, só a porta do frontend é publicada. Uma porta exposta na internet em vez de cinco, contando os bancos.
+2. **A mesma imagem serve todos os ambientes.** O endereço público embutido no build (o que `NEXT_PUBLIC_*` faz) obrigaria a reconstruir por ambiente, e a imagem testada em staging deixaria de ser a que vai para produção.
+3. **CORS deixa de existir para o navegador**, porque tudo vem da mesma origem.
+
+Duas armadilhas que só aparecem rodando:
+
+**O destino do rewrite é resolvido no build**, não em runtime. `PRODUCT_API` e `AUTH_API` precisam ir como `ARG` no Dockerfile; passá-las só no `environment` do container não tem efeito nenhum, e a falha é silenciosa.
+
+**O rewrite repassa o header `Origin` do navegador**, e o Spring aplica a política de CORS ao ver esse header, mesmo numa requisição que para o navegador é same-origin. Com `CORS_ALLOWED_ORIGINS` vazio, todo login responde `403 Invalid CORS request`. Por isso o compose de produção declara o domínio público nos dois serviços, embora nenhum deles seja alcançado pelo navegador.
+
 ## Segurança
 
 ### Achados corrigidos
@@ -48,6 +62,7 @@ A interface: onde quem compra escolhe a planta e onde quem vende cadastra.
 | id | sev | o que era | correção |
 |---|---|---|---|
 | V-3 | médio | **nenhuma imagem carregava**, sem erro visível e com `naturalWidth = 0` | as fotos passaram a ser servidas pelo domínio do próprio frontend, por rewrite |
+| V-6 | médio | falha de infraestrutura aparecia na tela como **"E-mail ou senha incorretos"**. Um `403` de CORS levava a vendedora a concluir que errou a senha, tentar de novo e trocar a senha, sem nunca entrar | só `401` e `404` recebem a mensagem genérica, que existe para não revelar se a conta existe. Qualquer outro status diz que é falha do sistema e mostra o código |
 
 A causa não é a aparente. O Next 16 **recusa otimizar imagem cujo host resolve para IP privado**, como proteção contra SSRF, e a única pista está no log do servidor:
 
@@ -83,7 +98,7 @@ Uma armadilha junto: o destino do rewrite é **congelado no build**, não lido e
 
 ## Testes
 
-104 testes em Vitest com Testing Library, rodando em jsdom. Medido em 19/08/2026 sobre `lib/` e `components/`: 97,5% de linhas e 90,3% de ramos.
+112 testes em Vitest com Testing Library, rodando em jsdom. Medido em 19/08/2026 sobre `lib/` e `components/`: 98,1% de linhas e 91,6% de ramos.
 
 ```bash
 cd florescer-web
@@ -99,17 +114,33 @@ O gate tem piso por pasta, e não um piso global: `lib/**` exige 95% de linhas e
 | `FormularioPlanta` | 16 | preço com vírgula virando NaN; checkbox desmarcado sumindo do payload; cadastro sem foto indo à API; duplo clique cadastrando duas vezes |
 | `Filtros` | 16 | filtro que não chega à URL; página antiga preservada ao trocar de filtro; `petSafe=false` devolvendo só as tóxicas |
 | `CardPlanta` | 12 | foto apontando para o host interno; selo de esgotada ausente; "null" na tela em planta antiga |
-| `lib/api` | 21 | parâmetro que deixa de ser enviado; 404 virando tela de erro; parte `product` sem `application/json`; login revelando se a conta existe |
+| `lib/api` | 29 | parâmetro que deixa de ser enviado; 404 virando tela de erro; parte `product` sem `application/json`; login revelando se a conta existe; **URL com host, que reabriria as APIs para a internet**; falha de sistema disfarçada de senha errada |
 | `lib/sessao` | 17 | payload base64url quebrando o `atob` e gerando laço de login; `ADMINISTRADOR` passando por `ADMIN`; token indo para `localStorage` |
 | `lib/rotulos` | 12 | URL da imagem voltando absoluta (issue #89); enum vazando para a tela |
 
 ### Prova de que os testes não são vacuosos
 
-24 mutações aplicadas ao código de produção, uma por vez, com a suíte rodando entre cada uma. **As 24 foram acusadas**, cada uma pelo teste que deveria pegá-la.
+28 mutações aplicadas ao código de produção, uma por vez, com a suíte rodando entre cada uma. **As 28 foram acusadas**, cada uma pelo teste que deveria pegá-la. A que devolve o navegador a chamar a API por host, o que reabriria as portas para a internet, é pega por 8 testes de uma vez.
 
 A primeira rodada teve 22 de 23. A que escapou removia a conversão base64url de `papeis()`, e o teste dessa conversão exercitava só `expirado()`: a conversão está escrita duas vezes, uma em cada função, e o teste cobria uma só. O caso faltante virou teste, e a mutação passou a ser acusada.
 
 O script exige baseline verde antes de começar. Sem isso, "a suíte falhou" não provaria nada: ela já podia estar falhando antes.
+
+### Verificado com a stack de produção
+
+Em 19/08/2026, com `docker-compose.prod.yml`, as portas 8080, 8081, 3306 e 5432 **fechadas** e apenas o frontend publicado:
+
+| Verificação | Resultado |
+|---|---|
+| login pelo domínio do site | 200 |
+| cadastro com foto (multipart + `Authorization` pelo proxy) | 201, acento preservado |
+| foto servida pelo domínio do frontend | 200, PNG íntegro |
+| planta na vitrine renderizada no servidor | presente no HTML |
+| botão de WhatsApp com acento codificado | `vi%C3%A7osa` |
+| edição pelo proxy | 204 |
+| cadastro sem token e com token inválido | 401 nos dois |
+
+No navegador, a vendedora fez login, cadastrou uma planta com foto e a viu na vitrine: `45,90` chegou como `R$ 45,90`, o acento sobreviveu, e a foto carregou de fato (`naturalWidth` 315, não zero).
 
 ### O que NÃO está coberto
 
@@ -141,7 +172,8 @@ No navegador, o que confirma que o essencial funciona: abrir a vitrine, marcar "
 
 | Data | O que mudou |
 |---|---|
-| 19/08/2026 | 104 testes automatizados, gate de cobertura e job próprio no CI |
+| 19/08/2026 | o navegador passou a falar só com o domínio do site; as APIs saíram da internet |
+| 19/08/2026 | 112 testes automatizados, gate de cobertura e job próprio no CI |
 | 11/08/2026 | vitrine, filtros, detalhe, WhatsApp, login e painel da vendedora |
 
 ## Correções feitas na validação visual

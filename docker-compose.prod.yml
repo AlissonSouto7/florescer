@@ -1,0 +1,162 @@
+# A stack como ela roda no servidor.
+#
+# Diferenças em relação ao `docker-compose.yml`, e o motivo de cada uma:
+#
+# 1. **Nada é construído aqui.** As imagens vêm do GHCR, já testadas pelo CI e
+#    publicadas pelo CD. Reconstruir no servidor faria o que roda em produção
+#    deixar de ser o que passou pelos gates.
+#
+# 2. **Só o frontend publica porta.** `auth-service` e `product-service` ficam
+#    alcançáveis apenas pela rede interna do Docker, e os bancos idem. O
+#    navegador fala com o domínio do site, e o servidor do Next repassa. Uma
+#    porta exposta em vez de cinco.
+#
+# 3. **Reinício automático.** `unless-stopped` faz a stack voltar sozinha depois
+#    de um reboot do servidor ou de um serviço que morreu.
+#
+# Uso:
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+#
+# A tag das imagens vem de IMAGE_TAG. Em produção use a versão exata
+# (IMAGE_TAG=0.1.0), nunca `latest`: uma tag móvel faz dois servidores rodarem
+# código diferente e transforma "qual versão está no ar" numa adivinhação.
+name: florescer
+
+services:
+
+  # --- bancos -------------------------------------------------------------
+  # Sem `ports`: quem precisa deles está na mesma rede. Um banco alcançável de
+  # fora é o caminho mais curto entre um catálogo e um vazamento.
+
+  auth-db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: authdb
+    volumes:
+      - auth-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks: [florescer]
+
+  product-db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: dbproduct
+    volumes:
+      - product-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d dbproduct"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks: [florescer]
+
+  # --- aplicações ---------------------------------------------------------
+
+  auth-service:
+    image: ${REGISTRY:-ghcr.io/alissonsouto7/florescer}/auth-service:${IMAGE_TAG:?defina a versão a subir, ex 0.1.0}
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:mysql://auth-db:3306/authdb
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      RSA_PRIVATE_KEY: ${RSA_PRIVATE_KEY}
+      RSA_PUBLIC_KEY: ${RSA_PUBLIC_KEY}
+      # O domínio público do site, e só ele.
+      #
+      # Parece desnecessário, já que o navegador nunca fala com esta API: quem
+      # chama é o servidor do Next, pela rede interna. Mas o rewrite **repassa o
+      # header Origin do navegador**, e o Spring aplica a política de CORS ao ver
+      # esse header, mesmo numa requisição que para o navegador é da mesma
+      # origem. Com a lista vazia, todo login responde 403 "Invalid CORS
+      # request", e a tela mostra "E-mail ou senha incorretos".
+      CORS_ALLOWED_ORIGINS: ${SITE_URL:?o endereço público do site, ex https://florescer.com.br}
+      LOG_PSEUDONYM_SALT: ${LOG_PSEUDONYM_SALT:?sem o sal, o pseudônimo do log vira reversível}
+      # O primeiro acesso da vendedora é criado uma vez e depois desligado. Deixar
+      # ligado significa recriar a conta a cada reinício, com a senha do ambiente.
+      ADMIN_ENABLED: ${ADMIN_ENABLED:-false}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:8080/actuator/health/readiness | grep -q UP"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks: [florescer]
+
+  product-service:
+    image: ${REGISTRY:-ghcr.io/alissonsouto7/florescer}/product-service:${IMAGE_TAG:?defina a versão a subir, ex 0.1.0}
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://product-db:5432/dbproduct
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_JWKS_URI: http://auth-service:8080/.well-known/jwks.json
+      JWT_ISSUER: ${JWT_ISSUER:-auth-service}
+      # Mesmo motivo do auth-service: o Origin do navegador chega aqui pelo
+      # rewrite, e a lista vazia derrubaria toda chamada do painel com 403.
+      CORS_ALLOWED_ORIGINS: ${SITE_URL}
+      LOG_PSEUDONYM_SALT: ${LOG_PSEUDONYM_SALT}
+      UPLOADS_DIR: /var/florescer/uploads
+    volumes:
+      # As fotos das plantas. É o dado que não dá para recriar, e é o que a
+      # rotina de backup precisa levar junto com o dump do banco.
+      - product-uploads:/var/florescer/uploads
+    depends_on:
+      product-db:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:8081/actuator/health/readiness | grep -q UP"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks: [florescer]
+
+  frontend:
+    image: ${REGISTRY:-ghcr.io/alissonsouto7/florescer}/florescer-web:${IMAGE_TAG:?defina a versão a subir, ex 0.1.0}
+    restart: unless-stopped
+    environment:
+      PRODUCT_API: http://product-service:8081
+      AUTH_API: http://auth-service:8080
+      WHATSAPP_NUMBER: ${WHATSAPP_NUMBER:?sem o número, o botão de comprar não aparece}
+    # A única porta publicada da stack. Em 127.0.0.1 porque quem atende a
+    # internet é o proxy com HTTPS, na frente; expor direto serviria o site em
+    # HTTP puro e deixaria a senha da vendedora trafegar em claro.
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      product-service:
+        condition: service_healthy
+    networks: [florescer]
+
+volumes:
+  auth-db-data:
+  product-db-data:
+  product-uploads:
+
+networks:
+  florescer:
+    driver: bridge

@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...menos o exemplo. Sem ele versionado, quem clona o repositorio nao tem
+# como saber quais variaveis o frontend precisa, e descobre pelo erro.
+!.env.example
 
 # vercel
 .vercel
