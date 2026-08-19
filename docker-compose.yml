@@ -137,9 +137,20 @@ services:
 
   frontend:
     build:
-      context: ./florescer-frontend
+      context: ./florescer-web
+      args:
+        # Estes valores entram no JavaScript durante o build, e nao em runtime:
+        # o Next embute tudo que comeca com NEXT_PUBLIC_ no bundle do navegador.
+        # Sao os enderecos que o CLIENTE alcanca, nao os da rede do Compose.
+        NEXT_PUBLIC_PRODUCT_API: http://localhost:${PRODUCT_PORT:-8081}
+        NEXT_PUBLIC_AUTH_API: http://localhost:${AUTH_PORT:-8080}
+        NEXT_PUBLIC_WHATSAPP: ${WHATSAPP_NUMBER:-}
+    environment:
+      # Este e usado na renderizacao no servidor, dentro da rede do Compose,
+      # onde o host e o nome do servico.
+      PRODUCT_API: http://product-service:8081
     ports:
-      - "${FRONTEND_PORT:-3000}:80"
+      - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
       auth-service:
         condition: service_healthy
