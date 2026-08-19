@@ -112,19 +112,22 @@ Sem as chaves configuradas a aplicação não sobe. Isso é intencional: um valo
 
 ```bash
 cd auth-service && ./mvnw verify     # ou product-service
+cd florescer-web && npm run test:coverage
 ```
 
-Testes rodando contra MySQL e PostgreSQL reais via Testcontainers, com piso de cobertura obrigatório. Docker precisa estar ativo.
+Cada serviço tem piso de cobertura obrigatório, verificado no CI.
 
 | | Testes | Linha | Ramo | Piso |
 |---|---|---|---|---|
 | auth-service | 62 | 89% | 70% | 80% / 55% |
 | product-service | 101 | 85% | 68% | 75% / 55% |
-| florescer-web | 0 | — | — | — |
+| florescer-web | 104 | 97% | 90% | 93% / 85% |
 
-O frontend **não tem teste automatizado**, e isso é dívida conhecida: hoje ele é verificado compilando (TypeScript estrito) e no navegador contra a stack real.
+Os serviços rodam contra MySQL e PostgreSQL reais via Testcontainers, então Docker precisa estar ativo. Banco em memória não é usado: SQL específico, tipo `NUMERIC` e comportamento de transação diferem justamente onde os defeitos aparecem.
 
-Banco em memória não é usado: SQL específico, tipo `NUMERIC` e comportamento de transação diferem justamente onde os defeitos aparecem.
+Os números do `florescer-web` cobrem `lib/` e `components/`. As páginas de `app/` não têm teste, e aparecem com zero no relatório de propósito.
+
+Teste que passa de primeira é suspeito. A suíte do frontend foi validada quebrando o código de propósito, 24 vezes, uma mutação por vez: as 24 foram acusadas. O que cada arquivo protege está em [`docs/features/vitrine.md`](docs/features/vitrine.md).
 
 ## API
 

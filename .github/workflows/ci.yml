@@ -54,6 +54,49 @@ jobs:
             ${{ matrix.service }}/target/site/jacoco/
           retention-days: 7
 
+  frontend:
+    name: build (florescer-web)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: florescer-web
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: florescer-web/package-lock.json
+
+      # ci, e não install: instala exatamente o que está no lockfile e falha se
+      # ele divergir do package.json, em vez de resolver versões novas por conta.
+      - name: Install
+        run: npm ci
+
+      - name: Test and coverage gate
+        run: npm run test:coverage
+
+      # O build é verificação, não só empacotamento: o TypeScript roda em modo
+      # estrito e reprova tipo quebrado que os testes não alcançariam.
+      - name: Build
+        run: npm run build
+        env:
+          # O build não fala com a API, mas o Next congela o destino do rewrite
+          # de /uploads neste momento. Um valor previsível aqui evita depender do
+          # que estiver no ambiente do runner.
+          PRODUCT_API: http://product-service:8081
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: coverage-florescer-web
+          path: florescer-web/coverage/
+          retention-days: 7
+
   secret-scan:
     name: secret scan
     runs-on: ubuntu-latest
