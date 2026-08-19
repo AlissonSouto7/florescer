@@ -11,22 +11,20 @@
 
 </div>
 
----
+Vitrine pública onde cada planta tem foto, descrição, cuidados e preço, com uma API para manter o catálogo atualizado.
 
-O Florescer é uma vitrine pública onde cada planta tem foto, descrição, cuidados e preço, com uma API para manter esse catálogo atualizado.
-
-## O que ele faz
+## O que faz
 
 **Para quem compra**
 
 - Vitrine com foto, preço e o que decide a escolha: tamanho, luz que a planta aguenta, se convive com animais.
-- Filtros que respondem a pergunta real: *planta para sombra*, *segura para o meu gato*, *até R$ 50*, *fácil de cuidar*. O filtro fica na URL, então o link filtrado pode ser enviado a alguém.
+- Filtros por luminosidade, segurança para animais, ambiente, dificuldade e faixa de preço. O filtro fica na URL, então o link filtrado pode ser enviado a alguém.
 - Página de cada planta com rega, ambiente, cuidados, e aviso claro quando a planta é tóxica.
-- Botão **Comprar pelo WhatsApp** que abre a conversa já dizendo qual planta e por quanto.
+- Botão de compra que abre o WhatsApp da vendedora com a planta e o preço já na mensagem.
 
 **Para quem vende**
 
-- Painel próprio, sem Swagger e sem `curl`: cadastrar, editar e excluir pela tela.
+- Painel para cadastrar, editar e excluir pela tela, sem Swagger e sem `curl`.
 - Preço aceito como se fala (`45,90`), foto com prévia antes de salvar, opções já marcadas nas respostas mais comuns.
 - Exclusão confirma dizendo o nome da planta.
 
@@ -76,7 +74,7 @@ Consequência prática: o catálogo continua no ar mesmo se o serviço de identi
 
 ## Começando
 
-**Requisitos:** JDK 17 e Docker. Maven não é necessário — o wrapper está versionado.
+**Requisitos:** JDK 17 e Docker. Maven não é necessário, o wrapper está versionado.
 
 ```bash
 # 1. Gerar o par de chaves (fora do repositório)
@@ -131,7 +129,7 @@ Banco em memória não é usado: SQL específico, tipo `NUMERIC` e comportamento
 ## API
 
 <details>
-<summary><b>auth-service</b> — identidade</summary>
+<summary><b>auth-service</b>: identidade</summary>
 
 | Método | Rota | Acesso |
 |---|---|---|
@@ -143,7 +141,7 @@ Banco em memória não é usado: SQL específico, tipo `NUMERIC` e comportamento
 </details>
 
 <details>
-<summary><b>product-service</b> — catálogo</summary>
+<summary><b>product-service</b>: catálogo</summary>
 
 | Método | Rota | Acesso |
 |---|---|---|
@@ -158,7 +156,7 @@ Banco em memória não é usado: SQL específico, tipo `NUMERIC` e comportamento
 
 ## Segurança
 
-Decisões que valem conhecer antes de mexer no código:
+Decisões que valem conhecer antes de mexer no código.
 
 - Chaves RSA nunca no repositório; carregadas por configuração, sem valor padrão.
 - Upload identifica o tipo pelos **bytes** do arquivo, não pelo `Content-Type` declarado, e descarta o nome original.
@@ -173,7 +171,7 @@ Achados por área, incluindo os que continuam **abertos**, em [`docs/features/`]
 
 | | |
 |---|---|
-| [`docs/features/`](docs/features/) | cada área: regras, achados de segurança, cobertura de teste |
+| [`docs/features/`](docs/features/) | cada área: regras, achados de segurança, o que os testes cobrem |
 | [`docs/workflow/`](docs/workflow/) | GitFlow, CI/CD, code review, ambientes |
 | [`CHANGELOG.md`](CHANGELOG.md) | o que mudou em cada versão |
 

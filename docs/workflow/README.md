@@ -1,16 +1,16 @@
-# Como trabalhamos no Florescer
+# Processo de desenvolvimento
 
-Estes documentos descrevem o processo de desenvolvimento do projeto: como o código anda, o que impede código ruim de passar, e como o trabalho é organizado. Foram escritos para serem estudados, não só consultados: cada um explica o *porquê* da escolha e compara com as alternativas.
+Como o código anda, o que impede código ruim de passar, e como o trabalho é organizado. Cada documento registra a decisão tomada e a alternativa descartada.
 
 | Documento | Responde |
 |---|---|
 | [01 - GitFlow](01-gitflow.md) | Onde o código nasce, como ele chega em produção, e por que não usamos GitHub Flow |
 | [02 - CI, CD e gates](02-ci-cd-e-gates.md) | O que roda no pipeline e o que exatamente bloqueia um merge ou um deploy |
-| [03 - Metodologias ágeis](03-metodologias-ageis.md) | Kanban, Scrum, WIP limit, Definition of Done, e o que responder numa entrevista |
+| [03 - Organização do trabalho](03-metodologias-ageis.md) | Kanban, WIP limit, Definition of Done, rastreabilidade |
 | [04 - Code review](04-code-review.md) | O que olhar num PR, em que ordem, e como comentar |
 | [05 - Ambientes e deploy](05-ambientes-e-deploy.md) | Por que três ambientes, promoção de artefato, rollback |
 
-## O ciclo, em uma tela
+## O ciclo
 
 ```
 issue no board (Ready)

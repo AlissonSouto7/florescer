@@ -2,6 +2,27 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), versionamento em [SemVer](https://semver.org/lang/pt-BR/).
 
+## Não lançado
+
+### Adicionado
+
+- **Vitrine e painel em Next.js**, substituindo o frontend estático. A vitrine renderiza no servidor, então o HTML já chega com as plantas e cada uma é indexável.
+- **Botão de compra pelo WhatsApp**, com a planta e o preço na mensagem. Não aparece em planta sem estoque.
+- **Painel da vendedora**: cadastrar, editar e excluir pela tela, com prévia da foto e preço aceito com vírgula.
+- **Sete campos que quem compra pergunta**: altura, luminosidade, rega, segurança para animais, ambiente, dificuldade e se o vaso está incluso.
+- **Filtros na vitrine** por esses campos e por faixa de preço, resolvidos no banco. Planta marcada como `AMBOS` aparece nas buscas por interno e por externo.
+
+### Corrigido
+
+- Environment `production` recusava deploy disparado por tag, o que quebrava o CD da release.
+- Imagens não carregavam: o Next 16 recusa otimizar imagem de host que resolve para IP privado. Passaram a ser servidas pelo domínio do frontend.
+- Fundo escuro com texto escuro para quem usa o sistema em tema escuro.
+- Painel pedia página maior que o teto da API e falhava ao listar.
+
+### Removido
+
+- Frontend estático (`florescer-frontend/`), substituído pelo Next. Junto com ele saiu a tela de registro: o comprador chega à vendedora pelo WhatsApp sem criar conta, e a conta dela vem de configuração. O endpoint de registro continua existindo e testado.
+
 ## [0.1.0] - 2026-08-11
 
 Primeira versão que funciona de ponta a ponta e pode ser publicada. O código existia antes; o que esta versão traz é ele funcionando, seguro, testado e documentado.

@@ -1,6 +1,6 @@
 # Ambientes, deploy e rollback
 
-Este documento explica por que existem três ambientes no Florescer, o que diferencia cada um, e como uma mudança viaja do commit até a produção.
+Os três ambientes do Florescer, o que diferencia cada um, e como uma mudança viaja do commit até a produção.
 
 ## Por que mais de um ambiente
 
@@ -58,8 +58,8 @@ A regra: **a mesma imagem que passou em staging é a que vai para produção.** 
 
 Por isso o `cd.yml` publica cada imagem com duas tags:
 
-- `ghcr.io/.../auth-service:1.2.0` — o apelido legível
-- `ghcr.io/.../auth-service:<sha do commit>` — o identificador imutável
+- `ghcr.io/.../auth-service:1.2.0`: o apelido legível
+- `ghcr.io/.../auth-service:<sha do commit>`: o identificador imutável
 
 A tag de sha é a que garante rastreabilidade: dado um container rodando, dá para chegar no commit exato que o gerou.
 
@@ -85,7 +85,7 @@ A pergunta que separa quem já operou produção de quem não operou é: **quant
 
 Com imagens versionadas, o rollback de aplicação é trocar a tag para a versão anterior e reiniciar. É rápido justamente porque a imagem antiga continua existindo no registry.
 
-**Migração de banco é o que complica.** Se a versão 1.2.0 removeu uma coluna, voltar para a 1.1.0 encontra um banco onde a coluna não existe mais. A regra prática, e que vale como resposta em entrevista:
+**Migração de banco é o que complica.** Se a versão 1.2.0 removeu uma coluna, voltar para a 1.1.0 encontra um banco onde a coluna não existe mais. A regra prática:
 
 > Migração de banco deve ser **aditiva e compatível com a versão anterior**. Adicionar coluna é seguro. Remover ou renomear não é, a menos que seja feito em duas etapas: primeiro o código para de usar (e essa versão vai a produção), depois a coluna é removida numa versão seguinte.
 

@@ -49,7 +49,7 @@ A interface: onde quem compra escolhe a planta e onde quem vende cadastra.
 |---|---|---|---|
 | V-3 | médio | **nenhuma imagem carregava**, sem erro visível e com `naturalWidth = 0` | as fotos passaram a ser servidas pelo domínio do próprio frontend, por rewrite |
 
-O `V-3` merece detalhe, porque a causa não é a que parece. O Next 16 **recusa otimizar imagem cujo host resolve para IP privado**, como proteção contra SSRF, e a única pista está no log do servidor:
+A causa não é a aparente. O Next 16 **recusa otimizar imagem cujo host resolve para IP privado**, como proteção contra SSRF, e a única pista está no log do servidor:
 
 ```
 upstream image http://localhost:18081/uploads/x.png
@@ -60,7 +60,7 @@ use images.dangerouslyAllowLocalIP = true to continue.
 
 Tanto `product-service` (rede do Docker) quanto `localhost` são privados, então toda foto respondia 400. Do lado do navegador não há sintoma nenhum: o build passa, a página renderiza, a tag `img` existe no HTML. Verificar "a imagem está no DOM" teria dado verde.
 
-**A opção `dangerouslyAllowLocalIP` existe e foi recusada.** O nome é honesto: ela reabre exatamente o buraco que a checagem fecha, e faria isso num ponto onde a URL vem de dado do banco.
+**A opção `dangerouslyAllowLocalIP` existe e foi recusada**, porque reabre o buraco que a checagem fecha, num ponto onde a URL vem de dado do banco.
 
 A saída foi um rewrite: `/uploads/*` no domínio do frontend é proxiado para o product-service. A imagem vira same-origin, o Next a trata como local, e quem busca do backend é o servidor do Next, para **um host fixo definido na configuração**, e não para qualquer endereço que a API devolver. De quebra, isso neutraliza a issue #89 no frontend, porque a URL que a API sugere deixa de importar: guardamos só o caminho.
 
@@ -126,11 +126,11 @@ No navegador, o que confirma que o essencial funciona: abrir a vitrine, marcar "
 | V-4 | com o sistema em tema escuro, o fundo virava preto enquanto os textos seguiam nos tons escuros do layout: o título ficava cinza-escuro sobre preto | a loja passou a ter um visual único e claro |
 | V-5 | foco do teclado invisível em parte dos elementos, depois que o CSS redefiniu cores | `:focus-visible` com contorno próprio |
 
-O `V-4` merece nota porque a causa não é onde se procura. O `globals.css` do template define `background` e `color` **no elemento `body`**, a partir de variáveis que trocam com `prefers-color-scheme: dark`. Regra de elemento vence classe utilitária na mesma especificidade, então as classes do layout eram ignoradas justamente para quem usa o sistema no escuro.
+O `globals.css` do template define `background` e `color` **no elemento `body`**, a partir de variáveis que trocam com `prefers-color-scheme: dark`. Regra de elemento vence classe utilitária na mesma especificidade, então as classes do layout eram ignoradas justamente para quem usa o sistema no escuro.
 
 Não aparece em teste de API, nem no HTML, nem no build. Só olhando a tela, e só olhando a tela **com o sistema em tema escuro**.
 
-A escolha por um visual claro só não é preguiça: um catálogo de plantas existe para a foto do produto aparecer, e fundo claro e neutro é o que deixa o verde se destacar. Também garante um contraste único e verificável (stone-50 sobre stone-900 dá 16,9:1, contra os 4,5:1 que o WCAG AA pede), em vez de dois temas que precisariam ser conferidos separadamente.
+O visual claro é escolha, não omissão: um catálogo existe para a foto aparecer, e fundo neutro deixa o verde se destacar. Também dá um contraste único e verificável (16,9:1, contra os 4,5:1 do WCAG AA), em vez de dois temas a conferir.
 
 ### V-6: o painel pedia mais do que a API permite
 
@@ -138,6 +138,6 @@ O painel listava as plantas com `size=100`. A API recusa acima de 50, e recusa *
 
 O resultado era a tela dizer "não foi possível carregar as plantas" com o catálogo cheio, e nada apontando para o tamanho da página como causa.
 
-Vale registrar o que isso significa: o guard-rail funcionou exatamente como projetado, e pegou o meu próprio código. Se a API tivesse cortado para 50 em silêncio, o painel teria funcionado por acaso e a vendedora descobriria o limite só quando a 51ª planta sumisse da lista dela.
+O limite funcionou como projetado. Se a API tivesse cortado para 50 em silêncio, o painel funcionaria por acaso, e o limite só apareceria quando a 51ª planta sumisse da lista.
 
 Corrigido para 50, com aviso na tela quando houver mais plantas que o mostrado. **Quando o catálogo passar de 50, o painel precisa paginar de verdade**, e isso ainda não existe.
