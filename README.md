@@ -39,7 +39,7 @@ Dois serviços independentes. O catálogo não consulta o serviço de identidade
                               │
               ┌───────────────┴───────────────┐
               │                               │
-     login / registro                      catálogo
+          login da vendedora                catálogo
               │                               │
               ▼                               ▼
    ┌──────────────────┐            ┌────────────────────┐

@@ -65,7 +65,7 @@ O `U-11` só apareceu ao rodar `docker compose up` de verdade: a suíte inteira 
 
 | id | sev | o que é | por que continua aberto |
 |---|---|---|---|
-| U-9 | médio | as imagens são servidas **pela mesma origem da API**. Um arquivo enviado por alguém e servido em `florescer.com/uploads/x` compartilha origem com a aplicação, então uma falha futura de tipo ou de escape roda no contexto dela, com acesso ao `localStorage` | corrigir é servir de um domínio separado (issue #23). Depende de infraestrutura que ainda não existe. Enquanto isso, a defesa é a detecção por magic bytes e o `X-Content-Type-Options: nosniff` do nginx |
+| U-9 | médio | as imagens são servidas **pela mesma origem da API**. Um arquivo enviado por alguém e servido em `florescer.com/uploads/x` compartilha origem com a aplicação, então uma falha futura de tipo ou de escape roda no contexto dela, com acesso ao `localStorage` | corrigir é servir de um domínio separado (issue #23). Depende de infraestrutura que ainda não existe. Enquanto isso, a defesa é a detecção por magic bytes e o `X-Content-Type-Options: nosniff`, hoje enviado pelo próprio Next |
 | U-10 | baixo | não há varredura antivírus nem limite de dimensão da imagem | um PNG válido de 20000x20000 passa no teste de tipo e consome memória ao ser processado. Hoje nada processa a imagem além de gravá-la, então o risco é de disco, coberto pelo limite de 10MB |
 
 ### Verificado e OK
@@ -125,6 +125,7 @@ SELECT id, name FROM tb_products WHERE image_path IS NULL OR image_path = '';
 
 | Data | O que mudou |
 |---|---|
-| 11/08/2026 | volume nomeado no compose, `nosniff` no nginx, permissão do volume corrigida (U-11) |
+| 11/08/2026 | volume nomeado no compose, permissão do volume corrigida (U-11) |
+| 19/08/2026 | imagens passaram a ser servidas pelo domínio do frontend, por rewrite; o frontend estático em nginx foi substituído pelo Next |
 | 10/08/2026 | I/O de disco movida para depois do commit |
 | 09/08/2026 | nome descartado, detecção por magic bytes, caminho confinado, rota unificada |

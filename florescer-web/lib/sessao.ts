@@ -28,8 +28,8 @@ export function esquecerToken(): void {
   sessionStorage.removeItem(CHAVE);
 }
 
-/** Papéis do token, para a interface esconder o que a pessoa não pode fazer. */
-export function papeis(token: string): string[] {
+/** Papéis do token. Interno: quem decide de fora é ehAdmin. */
+function papeis(token: string): string[] {
   try {
     const payload = token.split('.')[1];
     // O payload é base64url: troca os caracteres antes de decodificar, senão
