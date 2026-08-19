@@ -1,18 +1,32 @@
 /**
  * Acesso às duas APIs do Florescer.
  *
- * Os endereços vêm de variável de ambiente porque mudam por ambiente. Como a
- * vitrine é renderizada no servidor e o painel roda no navegador, existem duas
- * variáveis: a do servidor pode apontar para o nome do serviço dentro da rede do
- * Docker, enquanto a do navegador precisa de um endereço que o cliente alcance.
+ * O navegador nunca fala com as APIs diretamente. Ele chama caminhos do próprio
+ * domínio (`/api/product`, `/api/auth`) e o servidor do Next repassa para o
+ * serviço certo, pelos rewrites de `next.config.ts`.
+ *
+ * Isso existe por três motivos, nesta ordem de importância:
+ *
+ * 1. **As APIs não precisam ser públicas.** Só a porta do Next fica exposta na
+ *    internet. Um serviço alcançável de fora em vez de três.
+ * 2. **A mesma imagem serve todos os ambientes.** Endereço público embutido no
+ *    build (o que `NEXT_PUBLIC_*` faz) obrigaria a reconstruir a imagem por
+ *    ambiente, e o que foi testado em staging deixaria de ser o que vai para
+ *    produção.
+ * 3. **CORS deixa de existir**, porque tudo vem da mesma origem.
+ *
+ * Do lado do servidor a conversa é direta com o serviço: dar a volta pelo
+ * próprio Next só acrescentaria um salto de rede.
  */
 
-const PRODUTOS_SERVIDOR = process.env.PRODUCT_API ?? 'http://localhost:8081';
-const PRODUTOS_NAVEGADOR = process.env.NEXT_PUBLIC_PRODUCT_API ?? 'http://localhost:8081';
-const AUTH_NAVEGADOR = process.env.NEXT_PUBLIC_AUTH_API ?? 'http://localhost:8080';
+const PRODUTOS_INTERNO = process.env.PRODUCT_API ?? 'http://localhost:8081';
 
-/** Do lado do servidor usa o endereço interno; no navegador, o público. */
-const produtosBase = () => (typeof window === 'undefined' ? PRODUTOS_SERVIDOR : PRODUTOS_NAVEGADOR);
+/** Onde o catálogo atende, visto de quem está chamando. */
+const produtos = () =>
+  typeof window === 'undefined' ? `${PRODUTOS_INTERNO}/v1/product` : '/api/product';
+
+/** O login só acontece no navegador, então sempre passa pelo proxy. */
+const AUTENTICACAO = '/api/auth';
 
 export type Luminosidade = 'SOL_PLENO' | 'MEIA_SOMBRA' | 'SOMBRA';
 export type Rega = 'DIARIA' | 'DUAS_A_TRES_VEZES_SEMANA' | 'SEMANAL' | 'QUINZENAL' | 'MENSAL';
@@ -78,7 +92,7 @@ function queryDe(filtros: Filtros): string {
 }
 
 export async function listarPlantas(filtros: Filtros = {}): Promise<Pagina<Planta>> {
-  const resposta = await fetch(`${produtosBase()}/v1/product?${queryDe(filtros)}`, {
+  const resposta = await fetch(`${produtos()}?${queryDe(filtros)}`, {
     // A vitrine muda quando a vendedora cadastra, não a cada segundo. Meio
     // minuto de cache corta a maioria das consultas ao banco sem que alguém
     // veja um catálogo desatualizado.
@@ -92,7 +106,7 @@ export async function listarPlantas(filtros: Filtros = {}): Promise<Pagina<Plant
 }
 
 export async function buscarPlanta(id: string): Promise<Planta | null> {
-  const resposta = await fetch(`${produtosBase()}/v1/product/${id}`, { next: { revalidate: 30 } });
+  const resposta = await fetch(`${produtos()}/${id}`, { next: { revalidate: 30 } });
 
   // 404 é resposta legítima: quem seguiu um link antigo precisa ver "não
   // encontrada", não uma tela de erro.
@@ -103,16 +117,24 @@ export async function buscarPlanta(id: string): Promise<Planta | null> {
 }
 
 export async function entrar(email: string, password: string): Promise<string> {
-  const resposta = await fetch(`${AUTH_NAVEGADOR}/v1/auth/login`, {
+  const resposta = await fetch(`${AUTENTICACAO}/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
 
-  if (!resposta.ok) {
+  if (resposta.status === 401 || resposta.status === 404) {
     // A API responde a mesma coisa para conta inexistente e senha errada, de
     // propósito. A interface não pode ser mais específica que ela.
     throw new Error('E-mail ou senha incorretos.');
+  }
+
+  if (!resposta.ok) {
+    // Qualquer outro status é falha do sistema, e chamar isso de senha errada
+    // manda a pessoa procurar o problema no lugar errado: ela tenta de novo,
+    // troca a senha, e continua sem entrar. O código vai na mensagem porque é
+    // ele que diz para onde olhar, e não revela nada sobre a conta.
+    throw new Error(`Não foi possível entrar agora (erro ${resposta.status}). Tente novamente em instantes.`);
   }
 
   const { accessToken } = await resposta.json();
@@ -142,7 +164,7 @@ export async function salvarPlanta(
   form.append('product', new Blob([JSON.stringify(dados)], { type: 'application/json' }));
   if (imagem) form.append('image', imagem);
 
-  return fetch(`${PRODUTOS_NAVEGADOR}/v1/product`, {
+  return fetch(`${produtos()}`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
     body: form,
@@ -159,7 +181,7 @@ export async function alterarPlanta(
   form.append('product', new Blob([JSON.stringify(dados)], { type: 'application/json' }));
   if (imagem) form.append('image', imagem);
 
-  return fetch(`${PRODUTOS_NAVEGADOR}/v1/product/${id}`, {
+  return fetch(`${produtos()}/${id}`, {
     method: 'PATCH',
     headers: { Authorization: `Bearer ${token}` },
     body: form,
@@ -167,7 +189,7 @@ export async function alterarPlanta(
 }
 
 export async function excluirPlanta(id: string, token: string): Promise<Response> {
-  return fetch(`${PRODUTOS_NAVEGADOR}/v1/product/${id}`, {
+  return fetch(`${produtos()}/${id}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${token}` },
   });

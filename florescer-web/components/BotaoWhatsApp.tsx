@@ -9,18 +9,24 @@ import type { Planta } from '@/lib/api';
  *
  * O número vem de configuração, nunca do código: é um número pessoal, e
  * repositório público é lugar onde ninguém deveria encontrá-lo.
+ *
+ * Este é um componente de servidor, então a leitura acontece a cada
+ * renderização, no servidor. Isso é o que permite trocar o número mexendo no
+ * ambiente do container, sem reconstruir a imagem, e é por isso que a variável
+ * não tem o prefixo `NEXT_PUBLIC_`: esse prefixo grava o valor dentro do
+ * JavaScript durante o build, e o número ficaria congelado na imagem.
  */
-
-const NUMERO = process.env.NEXT_PUBLIC_WHATSAPP ?? '';
 
 function precoEmReal(valor: number): string {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
 }
 
 export function BotaoWhatsApp({ planta }: { planta: Planta }) {
+  const numero = process.env.WHATSAPP_NUMBER ?? '';
+
   // Sem número configurado, o botão não aparece. Um link para wa.me sem número
   // abre uma página de erro do WhatsApp, o que é pior que não ter botão.
-  if (!NUMERO) return null;
+  if (!numero) return null;
 
   // Planta indisponível ou sem estoque não recebe botão: o pedido chegaria para
   // uma venda que a vendedora não pode atender.
@@ -36,7 +42,7 @@ export function BotaoWhatsApp({ planta }: { planta: Planta }) {
   const mensagem = `Olá! Tenho interesse na ${planta.name} (${precoEmReal(planta.price)}) que vi no site.`;
   // encodeURIComponent é obrigatório: sem ele, acento e quebra de linha
   // corrompem a mensagem, e o "&" de um nome cortaria o texto ao meio.
-  const link = `https://wa.me/${NUMERO}?text=${encodeURIComponent(mensagem)}`;
+  const link = `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`;
 
   return (
     <a

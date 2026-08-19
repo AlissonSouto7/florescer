@@ -139,18 +139,20 @@ services:
     build:
       context: ./florescer-web
       args:
-        # Estes valores entram no JavaScript durante o build, e nao em runtime:
-        # o Next embute tudo que comeca com NEXT_PUBLIC_ no bundle do navegador.
-        # Sao os enderecos que o CLIENTE alcanca, nao os da rede do Compose.
-        NEXT_PUBLIC_PRODUCT_API: http://localhost:${PRODUCT_PORT:-8081}
-        NEXT_PUBLIC_AUTH_API: http://localhost:${AUTH_PORT:-8080}
-        NEXT_PUBLIC_WHATSAPP: ${WHATSAPP_NUMBER:-}
-        # Endereco interno, usado pelo otimizador de imagem do Next.
+        # Sao nomes de servico da rede do Compose, iguais em qualquer ambiente.
+        # Precisam ser argumento de build porque o Next resolve o destino dos
+        # rewrites na hora do build; passa-los so no environment nao teria efeito
+        # nenhum, e a falha seria silenciosa.
         PRODUCT_API: http://product-service:8081
+        AUTH_API: http://auth-service:8080
     environment:
-      # Este e usado na renderizacao no servidor, dentro da rede do Compose,
-      # onde o host e o nome do servico.
+      # Repetidos aqui porque a renderizacao no servidor tambem os usa, agora em
+      # runtime.
       PRODUCT_API: http://product-service:8081
+      AUTH_API: http://auth-service:8080
+      # Lido a cada renderizacao, num componente de servidor: trocar o numero e
+      # so reiniciar o container, sem reconstruir a imagem.
+      WHATSAPP_NUMBER: ${WHATSAPP_NUMBER:-}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
