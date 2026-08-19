@@ -47,7 +47,9 @@ Configurado em Settings → Branches → Branch protection rules. Com ele ligado
 
 Um "status check" é o resultado de um job do workflow reportado de volta ao PR. Quando o job `build (auth-service)` é marcado como **required**, o botão de merge fica desabilitado até ele ficar verde.
 
-O job roda `./mvnw verify`, que faz, nesta ordem: compila, roda os testes, gera o relatório de cobertura, aplica o gate de cobertura. Se qualquer etapa falhar, o job falha, e o merge trava.
+São seis obrigatórios hoje: os três de build (`auth-service`, `product-service`, `florescer-web`), o `secret scan` e as duas análises do CodeQL.
+
+Os jobs dos serviços rodam `./mvnw verify`, que faz, nesta ordem: compila, roda os testes, gera o relatório de cobertura, aplica o gate. O do frontend roda `npm ci`, `npm run test:coverage` e `npm run build`. Se qualquer etapa falhar, o job falha, e o merge trava.
 
 Detalhe importante do `ci.yml`: a matriz roda os dois serviços em paralelo com `fail-fast: false`. Se o auth quebrar, o resultado do product ainda interessa: saber os dois de uma vez economiza uma rodada de correção.
 
@@ -56,12 +58,17 @@ Detalhe importante do `ci.yml`: a matriz roda os dois serviços em paralelo com 
 O JaCoCo mede quantas linhas do código foram executadas pelos testes e falha o build se ficar abaixo do mínimo. No `pom.xml` de cada serviço:
 
 ```xml
-<jacoco.line.coverage.minimum>0.00</jacoco.line.coverage.minimum>
+<jacoco.line.coverage.minimum>0.80</jacoco.line.coverage.minimum>
+<jacoco.branch.coverage.minimum>0.55</jacoco.branch.coverage.minimum>
 ```
 
-Está em zero **de propósito** neste momento: o projeto tem praticamente nenhum teste, e um gate que reprova tudo desde o primeiro dia seria desligado na primeira semana. O número sobe a cada fase de testes entregue, e o valor sempre reflete a cobertura real medida, nunca uma meta aspiracional.
+O piso é 80% de linha no auth e 75% no product, com 55% de ramo nos dois. O frontend tem o equivalente no Vitest, com piso por pasta em vez de global.
 
-Uma armadilha que vale saber explicar: **cobertura alta não significa código testado**. Um teste que executa a linha mas não verifica nada conta como cobertura. Por isso o gate de cobertura é o mais fraco dos gates; o que realmente protege é o protocolo de teste vermelho antes do verde (ver [04-code-review.md](04-code-review.md)).
+Cada valor sempre reflete cobertura **medida**, e nunca uma meta aspiracional. O gate começou em zero de propósito, quando o projeto quase não tinha teste: um gate que reprova tudo desde o primeiro dia é desligado na primeira semana. Ele subiu junto com cada entrega de testes, sempre depois de medir.
+
+Uma armadilha que vale saber explicar: **cobertura alta não significa código testado**. Um teste que executa a linha sem verificar nada conta como cobertura. Por isso o gate de cobertura é o mais fraco dos gates.
+
+O que realmente protege é provar que o teste não é vacuoso: quebrar o código de propósito e confirmar que ele acusa. A suíte do frontend passou por isso em 24 mutações, e uma delas escapou na primeira rodada, revelando um caso que faltava. O detalhe está em [`docs/features/vitrine.md`](../features/vitrine.md), e o protocolo em [04-code-review.md](04-code-review.md).
 
 ### Gate 4: secret scan
 

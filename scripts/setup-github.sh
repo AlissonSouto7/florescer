@@ -36,6 +36,7 @@ if [ "$STEP" = "protection" ]; then
     "contexts": [
       "build (auth-service)",
       "build (product-service)",
+      "build (florescer-web)",
       "secret scan",
       "analyze (java-kotlin)",
       "analyze (javascript-typescript)"
