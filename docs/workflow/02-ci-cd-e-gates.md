@@ -1,12 +1,12 @@
-# CI, CD e gates: o que impede código ruim de passar
+# CI, CD e gates
 
-Este documento explica o pipeline do Florescer: o que roda, quando roda, e o que exatamente bloqueia um merge ou um deploy.
+O pipeline do Florescer: o que roda, quando roda, e o que bloqueia um merge ou um deploy.
 
-## Os dois conceitos, sem confundir
+## CI e CD neste projeto
 
-**CI (Continuous Integration)** é sobre *integrar*: toda mudança é juntada com o código dos outros e verificada automaticamente, várias vezes ao dia. A pergunta que a CI responde é "isso quebra alguma coisa?".
+**CI (Continuous Integration)**: toda mudança é integrada ao código dos outros e verificada automaticamente. Responde "isso quebra alguma coisa?".
 
-**CD** tem dois significados diferentes que vivem sendo trocados:
+**CD** tem dois significados, frequentemente trocados:
 - *Continuous Delivery*: toda mudança aprovada fica **pronta** para ir a produção, mas alguém decide quando. É o caso deste projeto.
 - *Continuous Deployment*: toda mudança aprovada **vai** para produção automaticamente, sem humano no meio.
 
@@ -49,7 +49,7 @@ Um "status check" é o resultado de um job do workflow reportado de volta ao PR.
 
 O job roda `./mvnw verify`, que faz, nesta ordem: compila, roda os testes, gera o relatório de cobertura, aplica o gate de cobertura. Se qualquer etapa falhar, o job falha, e o merge trava.
 
-Detalhe importante do `ci.yml`: a matriz roda os dois serviços em paralelo com `fail-fast: false`. Se o auth quebrar, ainda quero saber se o product passa — resultado parcial economiza uma rodada inteira de correção.
+Detalhe importante do `ci.yml`: a matriz roda os dois serviços em paralelo com `fail-fast: false`. Se o auth quebrar, o resultado do product ainda interessa: saber os dois de uma vez economiza uma rodada de correção.
 
 ### Gate 3: coverage gate
 
@@ -91,7 +91,7 @@ Em repositório de uma pessoa só há um limite real: o GitHub não permite apro
 
 ### Gate 6: environment protection
 
-Este é o gate de deploy, e é o mais fácil de explicar em entrevista porque é visual: o job fica **pausado**, com um botão "Review deployments", até um humano aprovar.
+O gate de deploy. O job fica **pausado**, com um botão "Review deployments", até alguém aprovar.
 
 Configurado em Settings → Environments. O Florescer tem três:
 
@@ -103,7 +103,7 @@ Configurado em Settings → Environments. O Florescer tem três:
 
 No `cd.yml`, o vínculo é a linha `environment: ${{ needs.resolve.outputs.environment }}` no job. É isso, e só isso, que faz o GitHub aplicar as regras de proteção configuradas.
 
-## Promoção de artefato: o conceito que mais cai em entrevista
+## Promoção de artefato
 
 A regra é: **a mesma imagem que passou em staging é a que vai para produção**. Nunca se reconstrói para promover.
 
@@ -145,7 +145,7 @@ Custa mais tempo (o container leva alguns segundos para subir) e vale cada segun
 
 1. Abra a aba **Actions** ou clique em "Details" no check do PR.
 2. Ache o job vermelho e o **primeiro** step vermelho. Os erros seguintes costumam ser consequência.
-3. Se for teste, baixe o artefato `test-reports-<serviço>` — o `ci.yml` sobe os relatórios do surefire e da cobertura com `if: always()`, ou seja, **mesmo quando o build falha**. É a diferença entre debugar com o erro em mãos e adivinhar.
+3. Se for teste, baixe o artefato `test-reports-<serviço>`. O `ci.yml` sobe os relatórios do surefire e da cobertura com `if: always()`, ou seja, **mesmo quando o build falha**.
 4. Reproduza localmente com o mesmo comando do workflow: `./mvnw verify`. Se passa local e falha no CI, a diferença está no ambiente (variável de ambiente ausente, arquivo não commitado, dependência de estado da sua máquina).
 
 O caso real mais recente aqui: o Testcontainers 1.21.0 não fala a API do Docker Engine 29, e o erro que aparecia era um genérico "Could not find a valid Docker environment". A causa só ficou visível ao ler o log completo, onde o daemon respondia HTTP 400. Lição: erro genérico raramente tem causa genérica.

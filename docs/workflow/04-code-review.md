@@ -1,10 +1,10 @@
-# Code review: o que olhar num PR
+# Code review
 
-Este documento é o guia de revisão do Florescer. Vale tanto para revisar código de outra pessoa quanto para revisar o próprio antes de abrir o PR.
+O que olhar num PR. Vale para revisar código de outra pessoa e o próprio, antes de abrir.
 
-## Para que serve a revisão
+## Para que serve
 
-Não é para achar erro de digitação: linter faz isso. Revisão de código serve para três coisas que ferramenta nenhuma faz:
+Não é para achar erro de digitação, que o linter pega. A revisão serve para três coisas que ferramenta nenhuma faz:
 
 1. **Verificar se o código resolve o problema certo.** Um código impecável que resolve o problema errado é desperdício completo.
 2. **Espalhar conhecimento.** Depois da revisão, duas pessoas entendem aquela parte do sistema em vez de uma.
@@ -55,8 +55,8 @@ Só o "depois" não vale: sem o vermelho, ninguém sabe se o teste exercita o pr
 
 **Teste que passa de primeira é suspeito.** Quebre o código de propósito e confirme que o teste acusa. Casos reais já pegos assim:
 
-- `expect(...)->not->toContain($x, "mensagem")` — o framework tratou o segundo argumento como outro needle, e a negação passava sempre.
-- Um mock sem `->once()` — passava mesmo quando o código nunca chamava o serviço.
+- `expect(...)->not->toContain($x, "mensagem")`: o framework tratou o segundo argumento como outro needle, e a negação passava sempre.
+- Um mock sem `->once()`: passava mesmo quando o código nunca chamava o serviço.
 
 ### Dado é medido, nunca deduzido
 
@@ -71,7 +71,7 @@ Número bonito sem evidência é pior que "não sei", porque induz alguém a sub
 ### Manutenção
 
 - Segue a convenção que já existe no projeto? Um PR não é o lugar de introduzir um estilo novo sem combinar antes.
-- Dá para reusar algo que já existe em vez de criar? Este projeto já tem `SwaggerConstants`, `getProductOrThrow`, `ApiErrorResponse` — código duplicado costuma ser desconhecimento do que existe.
+- Dá para reusar algo que já existe em vez de criar? O projeto já tem `SwaggerConstants`, `getProductOrThrow` e `ApiErrorResponse`. Código duplicado costuma ser desconhecimento do que existe.
 - O nome diz o que a coisa faz? O caso mais gritante aqui foi uma classe chamada `ProductRestController` que era, na verdade, a implementação do repositório.
 - Comentário explica **restrição que o código não mostra**, não o que a linha faz. Comentário que narra a linha vira mentira no primeiro refactor.
 
