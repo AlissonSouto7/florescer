@@ -15,20 +15,20 @@
 
 O Florescer é uma vitrine pública onde cada planta tem foto, descrição, cuidados e preço, com uma API para manter esse catálogo atualizado.
 
-## Estado atual
+## O que ele faz
 
-`v0.1.0` — o catálogo funciona de ponta a ponta e a API está pronta para produção.
+**Para quem compra**
 
-| | |
-|---|---|
-| ✅ | Vitrine pública com foto, nome, descrição e preço |
-| ✅ | Contas de usuário com registro e login |
-| ✅ | API de catálogo completa, com upload de imagem |
-| ✅ | Autorização por papel: leitura pública, escrita restrita a administrador |
-| ⬜ | Botão de comprar levando ao WhatsApp da vendedora ([#61](https://github.com/AlissonSouto7/florescer/issues/61)) |
-| ⬜ | Painel para a vendedora cadastrar planta sem usar a API ([#62](https://github.com/AlissonSouto7/florescer/issues/62)) |
+- Vitrine com foto, preço e o que decide a escolha: tamanho, luz que a planta aguenta, se convive com animais.
+- Filtros que respondem a pergunta real: *planta para sombra*, *segura para o meu gato*, *até R$ 50*, *fácil de cuidar*. O filtro fica na URL, então o link filtrado pode ser enviado a alguém.
+- Página de cada planta com rega, ambiente, cuidados, e aviso claro quando a planta é tóxica.
+- Botão **Comprar pelo WhatsApp** que abre a conversa já dizendo qual planta e por quanto.
 
-Hoje o cadastro de plantas é feito pela API. Um painel para quem não é técnico está no roadmap.
+**Para quem vende**
+
+- Painel próprio, sem Swagger e sem `curl`: cadastrar, editar e excluir pela tela.
+- Preço aceito como se fala (`45,90`), foto com prévia antes de salvar, opções já marcadas nas respostas mais comuns.
+- Exclusão confirma dizendo o nome da planta.
 
 ## Arquitetura
 
@@ -72,7 +72,7 @@ Consequência prática: o catálogo continua no ar mesmo se o serviço de identi
 | Bancos | MySQL 8.4, PostgreSQL 16 |
 | Testes | JUnit 5, AssertJ, Testcontainers |
 | Infra | Docker, GitHub Actions, GHCR |
-| Frontend | HTML, CSS, JavaScript |
+| Frontend | Next.js 16, React 19, TypeScript, Tailwind |
 
 ## Começando
 
@@ -90,11 +90,14 @@ cp .env.example .env    # preencher conforme os comentários do arquivo
 docker compose up --build
 ```
 
-| Serviço | URL |
+| | URL |
 |---|---|
 | Vitrine | http://localhost:3000 |
+| Painel da vendedora | http://localhost:3000/admin |
 | API de identidade | http://localhost:8080/swagger |
 | API de catálogo | http://localhost:8081/swagger |
+
+Para o botão de WhatsApp aparecer, preencha `WHATSAPP_NUMBER` no `.env` (só dígitos, com país e DDD).
 
 Sem as chaves configuradas a aplicação não sobe. Isso é intencional: um valor padrão faria o sistema assinar tokens com uma chave conhecida por qualquer pessoa que leia o repositório.
 
@@ -104,6 +107,7 @@ Sem as chaves configuradas a aplicação não sobe. Isso é intencional: um valo
 |---|---|---|
 | `jwt.private-key deve conter um PEM...` com o `.env` correto | variável de ambiente do sistema vence o `.env` no Compose | `echo $RSA_PRIVATE_KEY` e remova-a |
 | `port is already allocated` | 3306, 5432, 8080, 8081 ou 3000 em uso | defina `AUTH_DB_PORT`, `PRODUCT_DB_PORT`, `AUTH_PORT`, `PRODUCT_PORT` ou `FRONTEND_PORT` no `.env` |
+| `bind: An attempt was made to access a socket in a way forbidden by its access permissions` (Windows) | a porta caiu numa faixa que o Hyper-V reserva | `netsh interface ipv4 show excludedportrange protocol=tcp` lista as faixas; escolha uma porta fora delas |
 | chave PEM cortada no meio | o Compose lê só até a primeira quebra de linha | `awk 'BEGIN{ORS="\\n"}1' app.key` |
 
 ## Testes
@@ -112,12 +116,15 @@ Sem as chaves configuradas a aplicação não sobe. Isso é intencional: um valo
 cd auth-service && ./mvnw verify     # ou product-service
 ```
 
-146 testes rodando contra MySQL e PostgreSQL reais via Testcontainers, com piso de cobertura obrigatório. Docker precisa estar ativo.
+Testes rodando contra MySQL e PostgreSQL reais via Testcontainers, com piso de cobertura obrigatório. Docker precisa estar ativo.
 
 | | Testes | Linha | Ramo | Piso |
 |---|---|---|---|---|
 | auth-service | 62 | 89% | 70% | 80% / 55% |
-| product-service | 84 | 84% | 65% | 75% / 55% |
+| product-service | 101 | 85% | 68% | 75% / 55% |
+| florescer-web | 0 | — | — | — |
+
+O frontend **não tem teste automatizado**, e isso é dívida conhecida: hoje ele é verificado compilando (TypeScript estrito) e no navegador contra a stack real.
 
 Banco em memória não é usado: SQL específico, tipo `NUMERIC` e comportamento de transação diferem justamente onde os defeitos aparecem.
 
@@ -189,7 +196,7 @@ Commits seguem [Conventional Commits](https://www.conventionalcommits.org/pt-br/
 ```
 auth-service/         identidade e emissão de token
 product-service/      catálogo e imagens
-florescer-frontend/   páginas estáticas
+florescer-web/        vitrine e painel (Next.js)
 docs/                 processo e documentação por feature
 .github/workflows/    CI, CD e análise estática
 docker-compose.yml    a stack completa

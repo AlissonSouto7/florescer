@@ -2,7 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import type { Planta } from '@/lib/api';
-import { LUMINOSIDADE, altura, precoEmReal } from '@/lib/rotulos';
+import { LUMINOSIDADE, altura, caminhoDaImagem, precoEmReal } from '@/lib/rotulos';
 
 /**
  * A planta na vitrine.
@@ -24,7 +24,7 @@ export function CardPlanta({ planta }: { planta: Planta }) {
     >
       <div className="relative aspect-square overflow-hidden bg-stone-100">
         <Image
-          src={planta.imageUrl}
+          src={caminhoDaImagem(planta.imageUrl)}
           alt={planta.name}
           fill
           // Diz ao navegador quanto espaço a imagem ocupa em cada tamanho de

@@ -11,6 +11,7 @@ import {
   LUMINOSIDADE_DETALHE,
   REGA,
   altura,
+  caminhoDaImagem,
   precoEmReal,
 } from '@/lib/rotulos';
 
@@ -53,7 +54,7 @@ export default async function DetalheDaPlanta({ params }: Props) {
       <div className="grid gap-8 md:grid-cols-2">
         <div className="relative aspect-square overflow-hidden rounded-xl bg-stone-100">
           <Image
-            src={planta.imageUrl}
+            src={caminhoDaImagem(planta.imageUrl)}
             alt={planta.name}
             fill
             sizes="(max-width: 768px) 100vw, 50vw"

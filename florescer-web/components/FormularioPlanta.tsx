@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { alterarPlanta, errosDe, salvarPlanta, type Planta } from '@/lib/api';
-import { AMBIENTE, DIFICULDADE, LUMINOSIDADE, LUMINOSIDADE_DETALHE, REGA } from '@/lib/rotulos';
+import { AMBIENTE, DIFICULDADE, LUMINOSIDADE, LUMINOSIDADE_DETALHE, REGA, caminhoDaImagem } from '@/lib/rotulos';
 import { lerToken } from '@/lib/sessao';
 
 /**
@@ -18,7 +18,7 @@ import { lerToken } from '@/lib/sessao';
 export function FormularioPlanta({ planta }: { planta?: Planta }) {
   const router = useRouter();
   const [imagem, setImagem] = useState<File | null>(null);
-  const [previa, setPrevia] = useState<string | null>(planta?.imageUrl ?? null);
+  const [previa, setPrevia] = useState<string | null>(planta ? caminhoDaImagem(planta.imageUrl) : null);
   const [erros, setErros] = useState<Record<string, string>>({});
   const [enviando, setEnviando] = useState(false);
   const urlDaPrevia = useRef<string | null>(null);
@@ -42,7 +42,7 @@ export function FormularioPlanta({ planta }: { planta?: Planta }) {
       urlDaPrevia.current = url;
       setPrevia(url);
     } else {
-      setPrevia(planta?.imageUrl ?? null);
+      setPrevia(planta ? caminhoDaImagem(planta.imageUrl) : null);
     }
   }
 

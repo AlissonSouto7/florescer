@@ -23,9 +23,14 @@ COPY . .
 ARG NEXT_PUBLIC_PRODUCT_API=http://localhost:8081
 ARG NEXT_PUBLIC_AUTH_API=http://localhost:8080
 ARG NEXT_PUBLIC_WHATSAPP=
+# O endereco interno tambem entra no build: o next.config o usa para autorizar
+# de quais hosts o otimizador de imagem pode carregar, e essa lista e resolvida
+# na hora do build.
+ARG PRODUCT_API=http://localhost:8081
 ENV NEXT_PUBLIC_PRODUCT_API=$NEXT_PUBLIC_PRODUCT_API \
     NEXT_PUBLIC_AUTH_API=$NEXT_PUBLIC_AUTH_API \
     NEXT_PUBLIC_WHATSAPP=$NEXT_PUBLIC_WHATSAPP \
+    PRODUCT_API=$PRODUCT_API \
     NEXT_TELEMETRY_DISABLED=1
 
 RUN npm run build

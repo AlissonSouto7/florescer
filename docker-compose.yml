@@ -145,6 +145,8 @@ services:
         NEXT_PUBLIC_PRODUCT_API: http://localhost:${PRODUCT_PORT:-8081}
         NEXT_PUBLIC_AUTH_API: http://localhost:${AUTH_PORT:-8080}
         NEXT_PUBLIC_WHATSAPP: ${WHATSAPP_NUMBER:-}
+        # Endereco interno, usado pelo otimizador de imagem do Next.
+        PRODUCT_API: http://product-service:8081
     environment:
       # Este e usado na renderizacao no servidor, dentro da rede do Compose,
       # onde o host e o nome do servico.

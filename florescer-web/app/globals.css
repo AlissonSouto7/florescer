@@ -1,26 +1,34 @@
 @import "tailwindcss";
 
+/*
+ * A loja tem um visual só, claro, e não segue o tema do sistema.
+ *
+ * O template inicial definia `background` e `color` no `body` a partir de
+ * variáveis que mudavam com `prefers-color-scheme: dark`. Como regra de
+ * elemento vence classe utilitária na mesma especificidade, o fundo virava
+ * preto para quem usa o sistema no escuro, enquanto os textos continuavam nos
+ * tons escuros do layout: o título ficava cinza-escuro sobre preto, ilegível.
+ *
+ * Um catálogo de plantas é sobre a foto do produto. Fundo claro e neutro é o
+ * que deixa o verde da planta aparecer, e é o que garante um contraste único e
+ * previsível, em vez de dois que precisariam ser verificados separadamente.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  color-scheme: light;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* stone-50 e stone-900: 16.9:1 de contraste, bem acima dos 4.5:1 do WCAG AA. */
+  background-color: #fafaf9;
+  color: #1c1917;
+}
+
+/*
+ * Foco sempre visível. O padrão do navegador some em alguns elementos quando o
+ * CSS redefine as cores, e quem navega por teclado perde a referência de onde
+ * está na página.
+ */
+:focus-visible {
+  outline: 2px solid #059669;
+  outline-offset: 2px;
 }

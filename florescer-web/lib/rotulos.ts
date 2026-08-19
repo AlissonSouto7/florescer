@@ -51,3 +51,27 @@ export function altura(cm: number | null): string | null {
   if (cm >= 100) return `${(cm / 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} m`;
   return `${cm} cm`;
 }
+
+/**
+ * Converte a URL de imagem que a API devolve num caminho do nosso domínio.
+ *
+ * O backend monta a URL a partir do host de quem chamou, então a mesma planta
+ * volta com `product-service:8081` quando a vitrine renderiza no servidor e com
+ * o endereço público quando o painel busca do navegador. Nenhuma das duas serve
+ * para os dois lugares.
+ *
+ * Guardando só o caminho, a imagem passa a ser servida pelo domínio do
+ * frontend, que faz o proxy para o product-service (ver o rewrite em
+ * next.config.ts). O host que a API sugeriu deixa de importar. Ver issue #89.
+ */
+export function caminhoDaImagem(url: string | null | undefined): string {
+  if (!url) return '/placeholder.svg';
+
+  try {
+    // URL absoluta: fica só com o caminho.
+    return new URL(url).pathname;
+  } catch {
+    // Já era relativa.
+    return url.startsWith('/') ? url : `/${url}`;
+  }
+}

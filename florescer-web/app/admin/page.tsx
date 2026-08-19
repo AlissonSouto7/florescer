@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
 import { excluirPlanta, listarPlantas, type Planta } from '@/lib/api';
-import { precoEmReal } from '@/lib/rotulos';
+import { caminhoDaImagem, precoEmReal } from '@/lib/rotulos';
 import { ehAdmin, esquecerToken, expirado, lerToken } from '@/lib/sessao';
 
 /**
@@ -27,8 +27,19 @@ export default function Painel() {
     try {
       // Traz as inativas também: a vendedora precisa enxergar o que escondeu da
       // vitrine para poder reativar depois.
-      const pagina = await listarPlantas({ size: 100 });
+      //
+      // 50 é o teto que a API impõe, e ela recusa acima disso em vez de cortar
+      // em silêncio. Pedir 100 fazia a listagem inteira falhar com 400 e a tela
+      // dizer "não foi possível carregar", sem pista de que a causa era o
+      // tamanho da página. Quando o catálogo passar de 50, isto precisa paginar.
+      const pagina = await listarPlantas({ size: 50 });
       setPlantas(pagina.content);
+
+      if (pagina.totalElements > pagina.content.length) {
+        setErro(
+          `Mostrando as primeiras ${pagina.content.length} de ${pagina.totalElements} plantas.`,
+        );
+      }
     } catch {
       setErro('Não foi possível carregar as plantas.');
     } finally {
@@ -109,7 +120,7 @@ export default function Painel() {
           {plantas.map((planta) => (
             <li key={planta.id} className="flex items-center gap-4 p-4">
               <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-stone-100">
-                <Image src={planta.imageUrl} alt="" fill sizes="64px" className="object-cover" />
+                <Image src={caminhoDaImagem(planta.imageUrl)} alt="" fill sizes="64px" className="object-cover" />
               </div>
 
               <div className="min-w-0 flex-1">
