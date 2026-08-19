@@ -16,6 +16,7 @@ import com.florescer.product.domain.exception.custom.FileStorageException;
 import com.florescer.product.domain.exception.custom.InvalidPatchException;
 import com.florescer.product.domain.exception.custom.ProductNotFoundException;
 import com.florescer.product.domain.model.NewProduct;
+import com.florescer.product.domain.model.ProductFilter;
 import com.florescer.product.domain.model.ProductChanges;
 import com.florescer.product.domain.service.ProductService;
 import com.florescer.product.infra.repository.ProductRepository;
@@ -78,6 +79,12 @@ public class ProductServiceImpl implements ProductService {
 
 		log.info("Produto criado: productId={} autor={}", salvo.getId(), autor());
 		return salvo;
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Page<Product> getListProduct(ProductFilter filter, Pageable pageable) {
+		return repository.findAll(filter, pageable);
 	}
 
 	@Override

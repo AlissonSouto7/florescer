@@ -78,18 +78,32 @@ class PlantDetailsTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("a listagem tambem traz os detalhes, para a vitrine filtrar")
     void listagemTrazOsDetalhes() throws Exception {
-        mockMvc.perform(multipart(HttpMethod.POST, "/v1/product")
-                .file(parteDoProduto(completo()))
-                .file(imagem())
-                .header("Authorization", "Bearer " + TestTokens.comEscopo("ADMIN")));
+        String corpo = mockMvc.perform(multipart(HttpMethod.POST, "/v1/product")
+                        .file(parteDoProduto(completo()))
+                        .file(imagem())
+                        .header("Authorization", "Bearer " + TestTokens.comEscopo("ADMIN")))
+                .andReturn().getResponse().getContentAsString();
+        String id = objectMapper.readTree(corpo).get("id").asText();
 
         JsonNode pagina = objectMapper.readTree(
                 mockMvc.perform(get("/v1/product?size=50"))
                         .andReturn().getResponse().getContentAsString());
 
+        // Procura pelo id em vez de pegar o primeiro da página: o banco é
+        // compartilhado pela suíte e a ordenação é por nome, então o primeiro
+        // item pode ser de outro teste. Passaria por sorte, e falharia quando a
+        // ordem de execução mudasse, que é o pior tipo de teste quebrado.
+        JsonNode item = null;
+        for (JsonNode candidato : pagina.get("content")) {
+            if (id.equals(candidato.get("id").asText())) {
+                item = candidato;
+                break;
+            }
+        }
+        assertThat(item).as("a planta recém-criada precisa aparecer na listagem").isNotNull();
+
         // Se a listagem não trouxer, a vitrine precisaria de uma requisição por
         // planta só para saber se ela é segura para gato.
-        JsonNode item = pagina.get("content").get(0);
         assertThat(item.has("heightCm")).as("listagem precisa expor altura").isTrue();
         assertThat(item.has("light")).as("listagem precisa expor luminosidade").isTrue();
         assertThat(item.has("petSafe")).as("listagem precisa expor segurança para animais").isTrue();

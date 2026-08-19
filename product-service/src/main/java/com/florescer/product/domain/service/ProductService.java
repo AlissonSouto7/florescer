@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.florescer.product.domain.entity.Product;
+import com.florescer.product.domain.model.ProductFilter;
 import com.florescer.product.domain.model.ProductChanges;
 import com.florescer.product.domain.model.NewProduct;
 
@@ -25,6 +26,9 @@ public interface ProductService {
 	Product createProduct(NewProduct command, MultipartFile image);
 
 	Page<Product> getListProduct(Pageable pageable);
+
+	/** Listagem da vitrine com filtros. Filtro vazio devolve o catálogo inteiro. */
+	Page<Product> getListProduct(ProductFilter filter, Pageable pageable);
 
 	Product getProductById(UUID productId);
 
