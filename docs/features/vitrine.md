@@ -4,7 +4,7 @@ A interface: onde quem compra escolhe a planta e onde quem vende cadastra.
 
 **Onde fica**: `florescer-web`, porta 3000, Next.js 16 com React 19.
 **Status**: funcional.
-**Última revisão**: 11/08/2026.
+**Última revisão**: 19/08/2026.
 
 ## Telas
 
@@ -83,16 +83,40 @@ Uma armadilha junto: o destino do rewrite é **congelado no build**, não lido e
 
 ## Testes
 
-**Nenhum teste automatizado.** Esta é a lacuna real desta entrega.
+104 testes em Vitest com Testing Library, rodando em jsdom. Medido em 19/08/2026 sobre `lib/` e `components/`: 97,5% de linhas e 90,3% de ramos.
 
-O que foi verificado, e como:
+```bash
+cd florescer-web
+npm test              # a suíte
+npm run test:coverage # com o gate de cobertura
+```
 
-| Verificação | Como |
-|---|---|
-| compila sem erro de tipo | `npm run build`, com TypeScript em modo estrito |
-| vitrine, filtros, detalhe, login, cadastro | navegador, contra a stack do Compose |
+O gate tem piso por pasta, e não um piso global: `lib/**` exige 95% de linhas e 85% de ramos, `components/**` exige 93% e 88%. As páginas de `app/` entram no relatório com zero, de propósito, para o número não parecer melhor do que é.
 
-O que deveria existir, e não existe: teste de componente para o `BotaoWhatsApp` (principalmente a codificação da mensagem com acento), teste do formulário validando o preço com vírgula, e um teste de ponta a ponta cobrindo cadastrar e ver na vitrine.
+| Arquivo | Testes | Risco que protege |
+|---|---|---|
+| `BotaoWhatsApp` | 10 | mensagem corrompida por acento, `&` ou `#`; botão em planta sem estoque; link para `wa.me` sem número |
+| `FormularioPlanta` | 16 | preço com vírgula virando NaN; checkbox desmarcado sumindo do payload; cadastro sem foto indo à API; duplo clique cadastrando duas vezes |
+| `Filtros` | 16 | filtro que não chega à URL; página antiga preservada ao trocar de filtro; `petSafe=false` devolvendo só as tóxicas |
+| `CardPlanta` | 12 | foto apontando para o host interno; selo de esgotada ausente; "null" na tela em planta antiga |
+| `lib/api` | 21 | parâmetro que deixa de ser enviado; 404 virando tela de erro; parte `product` sem `application/json`; login revelando se a conta existe |
+| `lib/sessao` | 17 | payload base64url quebrando o `atob` e gerando laço de login; `ADMINISTRADOR` passando por `ADMIN`; token indo para `localStorage` |
+| `lib/rotulos` | 12 | URL da imagem voltando absoluta (issue #89); enum vazando para a tela |
+
+### Prova de que os testes não são vacuosos
+
+24 mutações aplicadas ao código de produção, uma por vez, com a suíte rodando entre cada uma. **As 24 foram acusadas**, cada uma pelo teste que deveria pegá-la.
+
+A primeira rodada teve 22 de 23. A que escapou removia a conversão base64url de `papeis()`, e o teste dessa conversão exercitava só `expirado()`: a conversão está escrita duas vezes, uma em cada função, e o teste cobria uma só. O caso faltante virou teste, e a mutação passou a ser acusada.
+
+O script exige baseline verde antes de começar. Sem isso, "a suíte falhou" não provaria nada: ela já podia estar falhando antes.
+
+### O que NÃO está coberto
+
+- **As páginas de `app/`**: são componentes de servidor que buscam da API e montam a tela. Testá-las em jsdom exigiria simular o runtime do Next inteiro.
+- **Ponta a ponta com navegador**: cadastrar no painel e ver a planta aparecer na vitrine continua sendo verificação manual.
+- **O que jsdom não enxerga**: layout, contraste, e se a imagem carrega de fato. jsdom não baixa imagem nem calcula estilo, então `naturalWidth > 0` só é verificável no navegador.
+- **Responsividade e teclado**: nenhuma verificação automatizada de foco visível ou de navegação por Tab.
 
 ## Como verificar em produção
 
@@ -108,7 +132,7 @@ No navegador, o que confirma que o essencial funciona: abrir a vitrine, marcar "
 
 ## Dívida conhecida
 
-- Sem testes automatizados (acima).
+- Sem teste de ponta a ponta com navegador (acima).
 - Sem busca por texto.
 - Sem `minPrice`: só o teto.
 - A edição envia todos os campos, mesmo os não alterados. Funciona, porque o PATCH aplica o que veio, mas dois cadastros simultâneos na mesma planta sobrescrevem um ao outro.
@@ -117,6 +141,7 @@ No navegador, o que confirma que o essencial funciona: abrir a vitrine, marcar "
 
 | Data | O que mudou |
 |---|---|
+| 19/08/2026 | 104 testes automatizados, gate de cobertura e job próprio no CI |
 | 11/08/2026 | vitrine, filtros, detalhe, WhatsApp, login e painel da vendedora |
 
 ## Correções feitas na validação visual
