@@ -23,12 +23,15 @@ export async function generateMetadata({ params }: Props) {
   const { id } = await params;
   const planta = await buscarPlanta(id);
 
-  if (!planta) return { title: 'Planta não encontrada | Florescer' };
+  if (!planta) return { title: 'Planta não encontrada' };
 
   // Título e descrição próprios por planta: é o que aparece no resultado do
   // Google e na prévia quando alguém manda o link no WhatsApp.
   return {
-    title: `${planta.name} | Florescer`,
+    // Só o nome: o `template` do layout é quem acrescenta "| Florescer".
+    // Escrever a marca aqui também produzia "Antúrio | Florescer | Florescer"
+    // na aba, no resultado do Google e na prévia do link no WhatsApp.
+    title: planta.name,
     description: planta.description,
     alternates: { canonical: `/planta/${planta.id}` },
     openGraph: {

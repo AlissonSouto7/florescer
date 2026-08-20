@@ -1,10 +1,22 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { AMBIENTE, DIFICULDADE, LUMINOSIDADE } from '@/lib/rotulos';
+import { AMBIENTE, DIFICULDADE, LUMINOSIDADE, precoEmReal } from '@/lib/rotulos';
+import { precoDaUrl } from '@/lib/vitrine';
+
 import { FiltroDePreco } from './FiltroDePreco';
+
+/**
+ * Abaixo desta largura o painel vira gaveta sobreposta.
+ *
+ * É o `lg` do Tailwind (1024px), que é o que decide, nas classes lá embaixo,
+ * qual dos dois aparece. Os dois precisam concordar: se divergirem, existe uma
+ * faixa de larguras em que a página trava sem gaveta nenhuma na frente, ou em
+ * que a gaveta abre com a lista rolando atrás.
+ */
+const SO_TEM_GAVETA = '(max-width: 1023.98px)';
 
 /**
  * Os filtros da vitrine.
@@ -39,6 +51,8 @@ export function Filtros({
   const router = useRouter();
   const params = useSearchParams();
   const [aberto, setAberto] = useState(false);
+  const gavetaRef = useRef<HTMLDivElement>(null);
+  const botaoRef = useRef<HTMLButtonElement>(null);
 
   const aplicar = useCallback(
     (chave: string, valor: string | null) => {
@@ -60,11 +74,30 @@ export function Filtros({
 
   // Com a gaveta aberta, a página atrás não pode rolar junto: o dedo desliza a
   // lista de plantas em vez do conteúdo da gaveta.
+  //
+  // **Só onde a gaveta existe.** A primeira versão travava sempre, e no
+  // computador, onde o painel é embutido e não cobre nada, o efeito era a barra
+  // de rolagem sumir da página inteira. Medido em 1440px: barra de 15px com o
+  // painel fechado, 0 com ele aberto, e o conteúdo pulando 7px para o lado
+  // porque o container recentraliza quando a barra some.
+  //
+  // A consulta acompanha o redimensionamento em vez de ser lida uma vez só,
+  // senão abrir no celular e girar para paisagem deixa a trava presa.
   useEffect(() => {
     if (!aberto) return;
+
+    const consulta = window.matchMedia(SO_TEM_GAVETA);
     const antes = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+
+    const aplicar = () => {
+      document.body.style.overflow = consulta.matches ? 'hidden' : antes;
+    };
+
+    aplicar();
+    consulta.addEventListener('change', aplicar);
+
     return () => {
+      consulta.removeEventListener('change', aplicar);
       document.body.style.overflow = antes;
     };
   }, [aberto]);
@@ -77,6 +110,31 @@ export function Filtros({
     }
     document.addEventListener('keydown', aoTeclar);
     return () => document.removeEventListener('keydown', aoTeclar);
+  }, [aberto]);
+
+  // Ao abrir, o foco entra na gaveta; ao fechar, volta para o botão.
+  //
+  // A gaveta se declara `aria-modal`, e isso faz o leitor de tela esconder o
+  // resto da página. Com o foco parado no botão de fora, a pessoa ficava com o
+  // cursor num lugar que o leitor considera inexistente, e o Tab passeava pelos
+  // 31 elementos da vitrine atrás, que o leitor não anunciava mais.
+  useEffect(() => {
+    if (!aberto) return;
+
+    const gaveta = gavetaRef.current;
+    if (!gaveta) return;
+
+    primeiroFocavel(gaveta)?.focus();
+
+    return () => {
+      // Sem devolver, o foco volta para o começo da página e quem navega por
+      // teclado recomeça do cabeçalho toda vez que fecha um filtro.
+      //
+      // O destino vem da referência ao botão, e não de `document.activeElement`
+      // guardado na abertura: clicar com o mouse não necessariamente foca o
+      // botão, e nesse caso o que seria guardado é o `<body>`.
+      botaoRef.current?.focus();
+    };
   }, [aberto]);
 
   // Os mesmos grupos servem a gaveta do celular e ao painel do computador.
@@ -115,7 +173,7 @@ export function Filtros({
         <FiltroDePreco
           minimo={faixaDePreco.minimo}
           maximo={faixaDePreco.maximo}
-          valor={params.get('maxPrice') ? Number(params.get('maxPrice')) : null}
+          valor={precoDaUrl(params.get('maxPrice'))}
           aoEscolher={(v) => aplicar('maxPrice', v === null ? null : String(v))}
         />
       </Grupo>
@@ -142,10 +200,14 @@ export function Filtros({
       {/* A barra: o que está filtrado, e como mexer nisso. */}
       <div className="flex flex-wrap items-center gap-2">
         <button
+          ref={botaoRef}
           type="button"
           onClick={() => setAberto((a) => !a)}
           aria-expanded={aberto}
-          aria-controls="painel-de-filtros"
+          // `aria-controls` é referência por id: apontar para um painel que só
+          // existe depois de aberto faz o leitor de tela anunciar um alvo que
+          // não está lá.
+          aria-controls={aberto ? 'painel-de-filtros' : undefined}
           className="flex items-center gap-2 rounded-full border border-stone-300 bg-white px-4 py-2
                      text-sm font-medium text-stone-700 transition hover:border-stone-400
                      focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
@@ -211,9 +273,11 @@ export function Filtros({
           />
 
           <div
+            ref={gavetaRef}
             role="dialog"
             aria-modal="true"
             aria-label="Filtros"
+            onKeyDown={prenderOTab}
             className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-auto rounded-t-3xl bg-white
                        p-6 pb-28 shadow-2xl"
           >
@@ -271,8 +335,8 @@ function filtrosAtivos(params: URLSearchParams) {
     ativos.push({ chave: 'difficulty', rotulo: DIFICULDADE[dificuldade as keyof typeof DIFICULDADE] });
   }
 
-  const teto = params.get('maxPrice');
-  if (teto) ativos.push({ chave: 'maxPrice', rotulo: `Até R$ ${teto}` });
+  const teto = precoDaUrl(params.get('maxPrice'));
+  if (teto !== null) ativos.push({ chave: 'maxPrice', rotulo: `Até ${precoEmReal(teto)}` });
 
   if (params.get('petSafe') === 'true') {
     ativos.push({ chave: 'petSafe', rotulo: 'Segura para pets' });
@@ -351,4 +415,45 @@ function Marcador({
       {rotulo}
     </label>
   );
+}
+
+/** O que o Tab visita, na ordem em que visita. */
+const FOCAVEIS = 'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])';
+
+function focaveisDentro(container: HTMLElement): HTMLElement[] {
+  return [...container.querySelectorAll<HTMLElement>(FOCAVEIS)];
+}
+
+function primeiroFocavel(container: HTMLElement): HTMLElement | undefined {
+  return focaveisDentro(container)[0];
+}
+
+/**
+ * Faz o Tab dar a volta dentro da gaveta em vez de sair por baixo dela.
+ *
+ * O navegador não sabe que a gaveta é modal: `aria-modal` fala com o leitor de
+ * tela, não com a ordem de tabulação. Sem isto, o Tab sai da gaveta e continua
+ * pelos elementos da vitrine que o leitor acabou de esconder, e a pessoa fica
+ * navegando por links que, para ela, não existem mais.
+ */
+function prenderOTab(evento: React.KeyboardEvent<HTMLDivElement>) {
+  if (evento.key !== 'Tab') return;
+
+  const focaveis = focaveisDentro(evento.currentTarget);
+  if (focaveis.length === 0) return;
+
+  const primeiro = focaveis[0];
+  const ultimo = focaveis[focaveis.length - 1];
+  const atual = document.activeElement;
+
+  if (evento.shiftKey && atual === primeiro) {
+    evento.preventDefault();
+    ultimo.focus();
+    return;
+  }
+
+  if (!evento.shiftKey && atual === ultimo) {
+    evento.preventDefault();
+    primeiro.focus();
+  }
 }
