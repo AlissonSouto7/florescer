@@ -112,7 +112,7 @@ cd florescer-web && npm run test:coverage
 | texto | 3 | branco virando rótulo vazio no rodapé; espaço sobrando; texto maior que a coluna |
 | conteúdo | 1 | texto chegando corrompido ou resposta deixando de ser JSON |
 
-**Frontend**: 40 casos, em `lib/loja.test.ts` (12), `components/FormularioDaLoja.test.tsx` (14) e `lib/whatsapp.test.ts` (14), dentro dos 249 do frontend. Cobrem a API fora do ar não derrubando a loja, o aviso do backend chegando ao campo certo, sessão vencida levando ao login sem perder o que foi digitado, o botão travando durante o envio para dois cliques não virarem dois salvamentos, e o link de compra sobrevivendo a acento, `&` e `#` no nome da planta.
+**Frontend**: 40 casos, em `lib/loja.test.ts` (12), `components/FormularioDaLoja.test.tsx` (14) e `lib/whatsapp.test.ts` (14), dentro dos 274 do frontend. Cobrem a API fora do ar não derrubando a loja, o aviso do backend chegando ao campo certo, sessão vencida levando ao login sem perder o que foi digitado, o botão travando durante o envio para dois cliques não virarem dois salvamentos, e o link de compra sobrevivendo a acento, `&` e `#` no nome da planta.
 
 Medido em 20/08/2026: `lib/loja.ts` e `lib/whatsapp.ts` com 100% de linhas, ramos e funções; `FormularioDaLoja.tsx` com 31 de 32 linhas e 28 de 32 ramos; `ShopSettingsServiceImpl` com 96,7% de linhas e 87,5% de ramos.
 

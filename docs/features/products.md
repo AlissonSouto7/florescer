@@ -4,7 +4,7 @@ CRUD de produtos. Leitura pública, escrita restrita a ADMIN.
 
 **Onde fica**: `product-service`, porta 8081, PostgreSQL 16.
 **Status**: funcional, coberto por testes.
-**Última revisão**: 11/08/2026.
+**Última revisão**: 20/08/2026.
 
 ## Endpoints
 
@@ -124,7 +124,7 @@ Luminosidade e segurança para animais têm índice, porque são os filtros prev
 | `HealthEndpointTest` (12) | Actuator expondo configuração interna |
 | `OpenApiContractTest` (4) | documentação divergindo do que a API faz |
 
-**84 testes, cobertura medida em 83% de linha e 66% de ramo** (11/08/2026).
+**125 testes, cobertura medida em 88% de linha e 70% de ramo** (20/08/2026). O número cobre o serviço inteiro, incluindo os 24 casos dos dados da loja, documentados em [dados-da-loja.md](dados-da-loja.md).
 
 ### O que NÃO está coberto
 
