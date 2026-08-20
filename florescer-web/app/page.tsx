@@ -1,9 +1,11 @@
+import Link from 'next/link';
 import { Suspense } from 'react';
 
 import { CardPlanta } from '@/components/CardPlanta';
 import { Filtros } from '@/components/Filtros';
 import { listarPlantas, type Filtros as TipoFiltros } from '@/lib/api';
 import { LOJA_VAZIA, buscarDadosDaLoja } from '@/lib/loja';
+import { TEXTO_DO_VAZIO, motivoDoVazio, paginaDaUrl, precoDaUrl } from '@/lib/vitrine';
 
 export const metadata = {
   title: 'Florescer | Plantas',
@@ -61,6 +63,10 @@ export default async function Vitrine({ searchParams }: { searchParams: Promise<
     erro = 'Não foi possível carregar as plantas agora. Tente de novo em instantes.';
   }
 
+  // Quantos filtros a busca traz decide qual explicação o vazio recebe.
+  const temFiltroAtivo = Object.keys(filtros).some((chave) => chave !== 'page' && chave !== 'size');
+  const vazio = pagina ? motivoDoVazio(pagina, temFiltroAtivo) : null;
+
   return (
     <main className="mx-auto max-w-7xl px-4 py-8">
       <header className="mb-8">
@@ -84,12 +90,24 @@ export default async function Vitrine({ searchParams }: { searchParams: Promise<
             </p>
           )}
 
-          {pagina && pagina.content.length === 0 && (
+          {/* Vazio não é uma coisa só: ver lib/vitrine.ts. Dizer "afrouxe um
+              filtro" para quem não aplicou filtro nenhum pede uma ação
+              impossível numa tela onde não sobra mais nada para ler. */}
+          {vazio && (
             <div className="rounded-lg border border-stone-200 bg-stone-50 px-6 py-12 text-center">
-              <p className="font-medium text-stone-700">Nenhuma planta com esses filtros.</p>
-              <p className="mt-1 text-sm text-stone-500">
-                Tente afrouxar um deles: talvez o preço ou a luminosidade.
-              </p>
+              <p className="font-medium text-stone-700">{TEXTO_DO_VAZIO[vazio].titulo}</p>
+              <p className="mt-1 text-sm text-stone-500">{TEXTO_DO_VAZIO[vazio].detalhe}</p>
+
+              {vazio !== 'loja-sem-plantas' && (
+                <Link
+                  href="/"
+                  className="mt-6 inline-block rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-medium
+                             text-white transition hover:bg-emerald-700 focus:outline-none
+                             focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                >
+                  Ver todas as plantas
+                </Link>
+              )}
             </div>
           )}
 
@@ -148,21 +166,24 @@ function Paginacao({ atual, total, busca }: { atual: number; total: number; busc
   );
 }
 
-/** Converte o que veio na URL para os filtros da API, ignorando o inválido. */
+/**
+ * Converte o que veio na URL para os filtros da API, ignorando o inválido.
+ *
+ * As regras de preço e de página vêm de `lib/vitrine.ts`, as mesmas que a barra
+ * de filtros usa no navegador. Quando eram duas leituras diferentes, a barra
+ * descartava `?maxPrice=-5` e o servidor mandava para a API assim mesmo: a
+ * vitrine ficava vazia dizendo "nenhuma planta com esses filtros", sem nenhum
+ * filtro visível na tela para remover.
+ */
 function paraFiltros(busca: Busca): TipoFiltros {
-  const numero = (valor: string | undefined) => {
-    const n = Number(valor);
-    return valor && Number.isFinite(n) ? n : undefined;
-  };
-
   return {
     light: busca.light as TipoFiltros['light'],
     environment: busca.environment as TipoFiltros['environment'],
     difficulty: busca.difficulty as TipoFiltros['difficulty'],
     petSafe: busca.petSafe === 'true' ? true : undefined,
     onlyAvailable: busca.onlyAvailable === 'true' ? true : undefined,
-    maxPrice: numero(busca.maxPrice),
-    page: numero(busca.page) ?? 0,
+    maxPrice: precoDaUrl(busca.maxPrice) ?? undefined,
+    page: paginaDaUrl(busca.page),
     size: 12,
   };
 }

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { larguraDaTela } from '@/vitest.setup';
 import { Filtros } from './Filtros';
 
 /**
@@ -45,13 +46,26 @@ function comFiltros(query: string, quantidade = 12) {
 const botaoFiltrar = () => screen.getByRole('button', { name: /^filtrar/i });
 const abrir = () => fireEvent.click(botaoFiltrar());
 
+const CELULAR = 390;
+const COMPUTADOR = 1440;
+
 beforeEach(() => {
   vi.clearAllMocks();
   params = new URLSearchParams();
   document.body.style.overflow = '';
+  larguraDaTela(COMPUTADOR);
 });
 
 describe('a barra, antes de abrir', () => {
+  it('não aponta para um painel que ainda não existe', () => {
+    // `aria-controls` é uma referência por id: com o painel fechado ela apontava
+    // para nada, e o leitor de tela anuncia um alvo que não está lá.
+    comFiltros('');
+
+    const alvo = botaoFiltrar().getAttribute('aria-controls');
+    expect(alvo === null || document.getElementById(alvo) !== null).toBe(true);
+  });
+
   it('não mostra os grupos de filtro na frente das plantas', () => {
     // Este é o caso que motivou o redesenho: a coluna sempre aberta empurrava a
     // vitrine para baixo da dobra no celular.
@@ -150,8 +164,9 @@ describe('abrir e fechar', () => {
     expect(screen.getByRole('button', { name: 'Ver 1 planta' })).toBeInTheDocument();
   });
 
-  it('trava a rolagem da página enquanto a gaveta está aberta', () => {
+  it('trava a rolagem da página enquanto a gaveta está aberta, no celular', () => {
     // Sem travar, o dedo desliza a lista de plantas atrás em vez do conteúdo.
+    larguraDaTela(CELULAR);
     comFiltros('');
     expect(document.body.style.overflow).toBe('');
 
@@ -160,10 +175,36 @@ describe('abrir e fechar', () => {
   });
 
   it('devolve a rolagem ao fechar', () => {
+    larguraDaTela(CELULAR);
     comFiltros('');
     abrir();
     fireEvent.click(screen.getByRole('button', { name: 'Fechar filtros' }));
 
+    expect(document.body.style.overflow).toBe('');
+  });
+
+  it('NÃO trava a rolagem no computador, onde gaveta nenhuma existe', () => {
+    // O defeito relatado: no computador o painel é embutido e a página precisa
+    // continuar rolando. Travando, a barra de rolagem some, e a página inteira
+    // pula 7px para o lado porque o container recentraliza. Medido no
+    // navegador em 1440px: barra de 15px com o painel fechado, 0 com ele
+    // aberto; o título saiu de 89px para 96px da borda.
+    larguraDaTela(COMPUTADOR);
+    comFiltros('');
+    abrir();
+
+    expect(document.body.style.overflow).toBe('');
+  });
+
+  it('solta a rolagem se a janela crescer com o painel aberto', () => {
+    // Abrir no celular e girar para paisagem, ou arrastar a janela: a trava
+    // ficaria presa até fechar o painel.
+    larguraDaTela(CELULAR);
+    comFiltros('');
+    abrir();
+    expect(document.body.style.overflow).toBe('hidden');
+
+    larguraDaTela(COMPUTADOR);
     expect(document.body.style.overflow).toBe('');
   });
 
@@ -177,6 +218,77 @@ describe('abrir e fechar', () => {
 });
 
 describe('a gaveta do celular', () => {
+  it('leva o foco para dentro ao abrir', () => {
+    // A gaveta se declara `aria-modal`, o que faz o leitor de tela esconder o
+    // resto da página. Com o foco parado no botão de fora, a pessoa fica com o
+    // cursor num lugar que o leitor considera inexistente.
+    larguraDaTela(CELULAR);
+    comFiltros('');
+    abrir();
+
+    const gaveta = screen.getByRole('dialog');
+    expect(gaveta.contains(document.activeElement)).toBe(true);
+  });
+
+  /** Tudo que recebe foco dentro da gaveta, na ordem em que o Tab visita. */
+  function focaveisDaGaveta() {
+    const gaveta = screen.getByRole('dialog');
+    return [
+      ...gaveta.querySelectorAll<HTMLElement>(
+        'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      ),
+    ];
+  }
+
+  it('do último, o Tab volta para o primeiro em vez de sair da gaveta', () => {
+    // Medido no navegador antes da correção: 31 elementos atrás da gaveta
+    // continuavam alcançáveis pelo Tab, enquanto o leitor de tela dizia que não
+    // existiam.
+    //
+    // A verificação exige o destino exato, e não "continua dentro". O jsdom não
+    // move foco sozinho no Tab, então "continua dentro" passaria com o foco
+    // parado, sem armadilha nenhuma implementada. Aconteceu na primeira versão
+    // deste teste.
+    larguraDaTela(CELULAR);
+    comFiltros('');
+    abrir();
+
+    const focaveis = focaveisDaGaveta();
+    const primeiro = focaveis[0];
+    const ultimo = focaveis[focaveis.length - 1];
+
+    ultimo.focus();
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Tab' });
+
+    expect(document.activeElement).toBe(primeiro);
+  });
+
+  it('do primeiro, Shift+Tab volta para o último', () => {
+    larguraDaTela(CELULAR);
+    comFiltros('');
+    abrir();
+
+    const focaveis = focaveisDaGaveta();
+    const primeiro = focaveis[0];
+    const ultimo = focaveis[focaveis.length - 1];
+
+    primeiro.focus();
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Tab', shiftKey: true });
+
+    expect(document.activeElement).toBe(ultimo);
+  });
+
+  it('devolve o foco ao botão que abriu, ao fechar', () => {
+    // Sem isso o foco volta para o começo da página, e quem navega por teclado
+    // recomeça do cabeçalho toda vez que fecha um filtro.
+    larguraDaTela(CELULAR);
+    comFiltros('');
+    abrir();
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar filtros' }));
+
+    expect(document.activeElement).toBe(botaoFiltrar());
+  });
+
   it('fecha ao tocar fora dela', () => {
     // Tocar no escuro atrás é como se fecha qualquer gaveta num app.
     const { container } = comFiltros('');
@@ -315,6 +427,40 @@ describe('faixa de preço', () => {
     fireEvent.mouseUp(controle(), { target: { value: '120' } });
 
     expect(destino().searchParams.has('maxPrice')).toBe(false);
+  });
+
+  it('o chip do preço fala a mesma língua do painel', () => {
+    // O chip dizia "Até R$ 60" e o painel logo abaixo, "Até R$ 60,00". Dois
+    // jeitos de escrever o mesmo número, um ao lado do outro.
+    comFiltros('maxPrice=60');
+
+    expect(
+      screen.getByRole('button', { name: /Remover filtro Até R\$\s?60,00/ }),
+    ).toBeInTheDocument();
+  });
+
+  it('preço inválido na URL não vira filtro nem chip', () => {
+    // Com `?maxPrice=abc` a barra anunciava "Até R$ abc" e a API ignorava o
+    // parâmetro: a tela dizia estar filtrando o que não estava filtrado.
+    comFiltros('maxPrice=abc');
+
+    expect(screen.queryByRole('button', { name: /Remover filtro/ })).toBeNull();
+    expect(botaoFiltrar()).not.toHaveTextContent(/\d/);
+  });
+
+  it('preço inválido não chega como NaN ao leitor de tela', () => {
+    // O texto visível escapava, mas o `aria-valuetext` do controle anunciava
+    // "Até R$ NaN" para quem usa leitor de tela.
+    comFiltros('maxPrice=abc');
+    abrir();
+
+    expect(controle().getAttribute('aria-valuetext')).toBe('Qualquer preço');
+  });
+
+  it('preço negativo é tratado como ausente', () => {
+    comFiltros('maxPrice=-5');
+
+    expect(screen.queryByRole('button', { name: /Remover filtro/ })).toBeNull();
   });
 
   it('mostra o valor em reais, e não o número cru', () => {

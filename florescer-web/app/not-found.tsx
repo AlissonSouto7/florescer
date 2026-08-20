@@ -1,4 +1,12 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
+
+/**
+ * Sem isto a página herda o título padrão, e a aba de um endereço que não
+ * existe diz "Florescer | Plantas", igualzinha a uma página que existe. Quem
+ * tem várias abas abertas não acha qual delas deu errado.
+ */
+export const metadata: Metadata = { title: 'Página não encontrada' };
 
 /**
  * Quando o endereço não existe.
