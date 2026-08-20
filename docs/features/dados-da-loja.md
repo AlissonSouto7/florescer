@@ -6,6 +6,11 @@ Os quatro dados que a vendedora muda sem chamar ninguém: o WhatsApp que recebe 
 **Status**: funcional.
 **Última revisão**: 20/08/2026.
 
+> **Os valores neste documento são exemplos.** Telefone, cidade e horário reais vivem só no
+> banco, escritos pela própria vendedora. Um número de verdade neste arquivo seria o telefone
+> de alguém publicado num repositório, que é justamente o motivo de ele ter saído da variável
+> de ambiente. Mesma regra para os testes e para os exemplos do Swagger.
+
 ## Por que isto existe
 
 O número de WhatsApp vivia numa variável de ambiente do servidor e o rodapé tinha texto escrito no código. Trocar qualquer um dos dois significava editar arquivo e reiniciar container, coisa que a vendedora não faz.
@@ -46,7 +51,7 @@ A leitura é pública porque a vitrine é pública: o rodapé e o botão de comp
 
 | O que a pessoa digita | O que é gravado |
 |---|---|
-| `+55 (73) 99814-9668` | `5573998149668` |
+| `+55 (11) 98765-4321` | `5511987654321` |
 | `@florescer.plantas` | `florescer.plantas` |
 | `https://www.instagram.com/florescer.plantas/` | `florescer.plantas` |
 | `   ` | nulo |
@@ -69,7 +74,7 @@ A regra existe em três camadas, e cada uma cobre o que a anterior não alcança
 
 | id | sev | o que era | correção |
 |---|---|---|---|
-| C-1 | alto | a regra de 10 a 15 dígitos era um `@Pattern` no DTO, e anotação roda **antes** da limpeza: `+55 (73) 99814-9668` era recusado, ou seja, exatamente o formato que as pessoas usam | a contagem de dígitos foi para o service, depois de tirar a pontuação, com mensagem por campo para o aviso aparecer ao lado do campo certo. No DTO ficou só a checagem de caracteres, que não depende da limpeza |
+| C-1 | alto | a regra de 10 a 15 dígitos era um `@Pattern` no DTO, e anotação roda **antes** da limpeza: `+55 (11) 98765-4321` era recusado, ou seja, exatamente o formato que as pessoas usam | a contagem de dígitos foi para o service, depois de tirar a pontuação, com mensagem por campo para o aviso aparecer ao lado do campo certo. No DTO ficou só a checagem de caracteres, que não depende da limpeza |
 | C-2 | médio | o botão dizia "esta planta está indisponível" quando o problema era a loja não ter número configurado. Mentira sobre a planta: o visitante vai embora achando que esgotou | os dois casos passaram a ser distinguidos; `temNumero` e `podeComprar` são funções separadas |
 | C-6 | alto | a variável `WHATSAPP_NUMBER` continuou declarada nos dois composes depois que ninguém mais a lia, e no de produção ela era **obrigatória** (`${WHATSAPP_NUMBER:?...}`). Numa máquina de deploy sem essa linha no `.env`, a stack inteira recusava subir por causa de um valor que não faz mais nada | removida dos dois composes, do `.env.example`, do `Dockerfile` e do README. Provado antes e depois: `docker compose -f docker-compose.prod.yml config` com um `.env` sem a variável saía com erro antes, e passa agora |
 | C-3 | baixo | o rodapé tinha cache de 60 segundos, então ela salvava, abria a loja, via o número velho e concluía que não tinha salvo. Medido: até 24 segundos de defasagem | cache removido. O custo foi medido antes: 162 bytes e cerca de 17 ms por página, numa chamada que não sai da máquina |
@@ -129,13 +134,13 @@ A primeira rodada do backend deu "6 de 6 escaparam", inclusive em mutações imp
 
 ## Verificado no navegador
 
-Em 20/08/2026, com a stack de pé: preencher o formulário como ela preencheria, com `+55 (73) 99814-9668` no telefone e a URL completa do Instagram, salvar, e conferir na vitrine.
+Em 20/08/2026, com a stack de pé: preencher o formulário como ela preencheria, com o telefone pontuado (`+55 (11) 98765-4321` aqui, o dela de verdade na loja) e a URL completa do Instagram, salvar, e conferir na vitrine.
 
 | Verificação | Resultado |
 |---|---|
-| telefone gravado | `5573998149668` |
+| telefone gravado | `5511987654321` |
 | Instagram gravado | `florescer.plantas` |
-| rodapé, entrega | "ENTREGA EM Itabuna e região, BA" |
+| rodapé, entrega | "ENTREGA EM São Paulo e região, SP" |
 | rodapé, horário | "ATENDE Segunda a sábado, das 8h às 18h" |
 | rodapé, Instagram | `@florescer.plantas`, link abrindo em aba nova |
 | botão de comprar | aponta para o número gravado |

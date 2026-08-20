@@ -11,6 +11,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), 
 - **Painel da vendedora**: cadastrar, editar e excluir pela tela, com prévia da foto e preço aceito com vírgula.
 - **Sete campos que quem compra pergunta**: altura, luminosidade, rega, segurança para animais, ambiente, dificuldade e se o vaso está incluso.
 - **Filtros na vitrine** por esses campos e por faixa de preço, resolvidos no banco. Planta marcada como `AMBOS` aparece nas buscas por interno e por externo.
+- **Dados da loja editáveis pela vendedora** (`/admin/configuracoes`): WhatsApp que recebe os pedidos, cidade de entrega, Instagram e horário de atendimento. Saíram da variável de ambiente e do texto fixo no rodapé, porque trocar qualquer um deles exigia editar arquivo e reiniciar container.
+- **Filtros refeitos para celular e para computador**: gaveta sobreposta no telefone, com as plantas logo abaixo da barra, e painel que encolhe no computador. Antes era uma coluna sempre aberta, que empurrava a primeira planta para fora da tela no celular.
+- **Filtro por faixa de preço** e atalho de WhatsApp no próprio cartão da vitrine.
+- **Erros de senha contados por conta**, com a senha certa passando mesmo com o contador estourado.
+- **`Content-Security-Policy`** e `Permissions-Policy` no site.
 
 ### Corrigido
 
@@ -18,6 +23,19 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), 
 - Imagens não carregavam: o Next 16 recusa otimizar imagem de host que resolve para IP privado. Passaram a ser servidas pelo domínio do frontend.
 - Fundo escuro com texto escuro para quem usa o sistema em tema escuro.
 - Painel pedia página maior que o teto da API e falhava ao listar.
+- Abrir os filtros no computador tirava a barra de rolagem da página e deslocava o conteúdo 7px para o lado.
+- A gaveta de filtros se dizia modal para o leitor de tela, mas o foco continuava fora dela e o Tab passeava pela vitrine atrás.
+- `?page=999` mostrava "nenhuma planta com esses filtros" sem filtro nenhum aplicado, e sem caminho de volta.
+- Preço inválido na URL virava `NaN`: a barra anunciava um filtro que não estava aplicado, e o leitor de tela recebia "Até R$ NaN".
+- O título da planta repetia a marca na aba, no Google e na prévia do link.
+- Dez senhas erradas de um desconhecido trancavam a vendedora fora do painel por um minuto.
+
+### Segurança
+
+- Documentação viva da API (`/swagger` e `/v3/api-docs`) **desligada por padrão**, ligada explicitamente só em desenvolvimento.
+- APIs e bancos publicados apenas em `127.0.0.1` no compose de desenvolvimento.
+- Cabeçalho `X-Powered-By` removido.
+- Telefone, cidade e horário reais saíram do repositório: testes, exemplos do Swagger e documentação usam valores de exemplo.
 
 ### Removido
 

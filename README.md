@@ -8,10 +8,17 @@
 [![CodeQL](https://github.com/AlissonSouto7/florescer/actions/workflows/codeql.yml/badge.svg?branch=develop)](https://github.com/AlissonSouto7/florescer/actions/workflows/codeql.yml)
 [![Java](https://img.shields.io/badge/Java-17-orange)](https://openjdk.org/projects/jdk/17/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-6DB33F)](https://spring.io/projects/spring-boot)
+[![Next.js](https://img.shields.io/badge/Next.js-16-000000)](https://nextjs.org)
 
 </div>
 
-Vitrine pública onde cada planta tem foto, descrição, cuidados e preço, com uma API para manter o catálogo atualizado.
+Vitrine pública onde cada planta tem foto, descrição, cuidados e preço, e um painel onde quem vende mantém o catálogo sem depender de ninguém.
+
+**O que este projeto é, em uma frase:** uma loja de bairro na internet, feita para uma pessoa que vende plantas em casa.
+
+Isso decide o desenho inteiro, e vale dizer o que ele **não** tem: não há carrinho, não há cadastro de cliente, não há pagamento online. O visitante escolhe a planta e clica em comprar; o botão abre o WhatsApp da vendedora com o nome e o preço já escritos na mensagem, e a venda se fecha na conversa, como já se fechava antes. O sistema resolve a parte que faltava, que é ser encontrado e mostrar o que existe.
+
+O que existe de verdade é um monorepo com três aplicações: dois serviços Spring Boot (identidade e catálogo, cada um com o seu banco) e um frontend Next.js que é, ao mesmo tempo, a loja e o proxy que mantém as APIs fora da internet.
 
 ## O que faz
 
@@ -27,6 +34,7 @@ Vitrine pública onde cada planta tem foto, descrição, cuidados e preço, com 
 - Painel para cadastrar, editar e excluir pela tela, sem Swagger e sem `curl`.
 - Preço aceito como se fala (`45,90`), foto com prévia antes de salvar, opções já marcadas nas respostas mais comuns.
 - Exclusão confirma dizendo o nome da planta.
+- Os dados da loja (WhatsApp que recebe os pedidos, cidade de entrega, Instagram e horário) são editados por ela na tela, e não em arquivo de configuração. Trocar o número não exige ninguém com acesso ao servidor.
 
 ## Arquitetura
 
@@ -68,20 +76,40 @@ Dois serviços independentes atrás do frontend. O navegador fala **só com o do
 
 Três consequências práticas: o catálogo continua no ar mesmo se o serviço de identidade cair; trocar a chave de assinatura não exige redeploy dos dois lados; e, como nenhum endereço público fica embutido no build, a mesma imagem roda em qualquer ambiente.
 
-Em desenvolvimento as portas das APIs ficam abertas, para dar acesso ao Swagger. Em produção ([`docker-compose.prod.yml`](docker-compose.prod.yml)) só a do frontend é publicada, e ainda assim apenas em `127.0.0.1`, atrás do proxy que faz o HTTPS.
+Em desenvolvimento as APIs e os bancos são publicados apenas em `127.0.0.1`: dá para abrir o Swagger e conectar no banco da própria máquina, sem deixar nada disso ao alcance da rede local. Em produção ([`docker-compose.prod.yml`](docker-compose.prod.yml)) só a porta do frontend é publicada, e também em `127.0.0.1`, atrás do proxy que faz o HTTPS.
 
 ## Stack
 
-| Camada | Tecnologia |
+**Backend** (dois serviços, mesma pilha)
+
+| | |
 |---|---|
 | Linguagem | Java 17 |
 | Framework | Spring Boot 3.5 |
-| Segurança | Spring Security, OAuth2 Resource Server, JWT RS256 |
+| Segurança | Spring Security, OAuth2 Resource Server, JWT RS256 com JWKS |
 | Persistência | Spring Data JPA, Flyway |
-| Bancos | MySQL 8.4, PostgreSQL 16 |
-| Testes | JUnit 5, AssertJ, Testcontainers |
-| Infra | Docker, GitHub Actions, GHCR |
-| Frontend | Next.js 16, React 19, TypeScript, Tailwind |
+| Bancos | MySQL 8.4 (identidade), PostgreSQL 16 (catálogo) |
+| Documentação da API | springdoc-openapi, **desligada por padrão** |
+| Testes | JUnit 5, AssertJ, Testcontainers, JaCoCo |
+
+**Frontend**
+
+| | |
+|---|---|
+| Framework | Next.js 16.3 (App Router), React 19.2 |
+| Linguagem | TypeScript 5 |
+| Estilo | Tailwind CSS 4 |
+| Testes | Vitest 4, Testing Library, jsdom |
+| Papel duplo | é a vitrine **e** o proxy: nenhuma API precisa ser publicada |
+
+**Infraestrutura**
+
+| | |
+|---|---|
+| Execução | Docker e Docker Compose |
+| Imagens | multi-stage, publicadas no GHCR para `amd64` e `arm64` |
+| CI/CD | GitHub Actions, com gates obrigatórios por pull request |
+| Operação | scripts de backup, restauração e smoke test em [`scripts/`](scripts/) |
 
 ## Começando
 
@@ -99,12 +127,15 @@ cp .env.example .env    # preencher conforme os comentários do arquivo
 docker compose up --build
 ```
 
-| | URL |
-|---|---|
-| Vitrine | http://localhost:3000 |
-| Painel da vendedora | http://localhost:3000/admin |
-| API de identidade | http://localhost:8080/swagger |
-| API de catálogo | http://localhost:8081/swagger |
+| | URL | Observação |
+|---|---|---|
+| Vitrine | http://localhost:3000 | |
+| Painel da vendedora | http://localhost:3000/admin | não há link para cá em lugar nenhum do site, de propósito |
+| Dados da loja | http://localhost:3000/admin/configuracoes | WhatsApp, cidade, Instagram e horário |
+| API de identidade | http://localhost:8080/swagger | só com `SWAGGER_ENABLED=true`, que o compose de desenvolvimento já define |
+| API de catálogo | http://localhost:8081/swagger | idem |
+
+O painel exige uma conta ADMIN. Ela não é criada sozinha: preencha `ADMIN_ENABLED`, `ADMIN_EMAIL` e `ADMIN_PASSWORD` no `.env` antes de subir. Sem isso o sistema sobe sem nenhuma conta, o que é melhor que subir com uma conta que todo mundo conhece.
 
 O número de WhatsApp, a cidade de entrega, o Instagram e o horário de atendimento são editados pela
 própria vendedora em `/admin/configuracoes`, e ficam no banco. Enquanto o número não estiver
@@ -130,17 +161,23 @@ cd florescer-web && npm run test:coverage
 
 Cada serviço tem piso de cobertura obrigatório, verificado no CI.
 
+Medido em 20/08/2026:
+
 | | Testes | Linha | Ramo | Piso |
 |---|---|---|---|---|
-| auth-service | 62 | 89% | 70% | 80% / 55% |
-| product-service | 101 | 85% | 68% | 75% / 55% |
-| florescer-web | 112 | 98% | 92% | 93% / 85% |
+| auth-service | 80 | 92% | 77% | 80% / 55% |
+| product-service | 125 | 88% | 70% | 75% / 55% |
+| florescer-web | 274 | 99% | 93% | 93% / 85% |
 
 Os serviços rodam contra MySQL e PostgreSQL reais via Testcontainers, então Docker precisa estar ativo. Banco em memória não é usado: SQL específico, tipo `NUMERIC` e comportamento de transação diferem justamente onde os defeitos aparecem.
 
 Os números do `florescer-web` cobrem `lib/` e `components/`. As páginas de `app/` não têm teste, e aparecem com zero no relatório de propósito.
 
-Teste que passa de primeira é suspeito. A suíte do frontend foi validada quebrando o código de propósito, uma mutação por vez: todas foram acusadas. O que cada arquivo protege está em [`docs/features/vitrine.md`](docs/features/vitrine.md).
+Teste que passa de primeira é suspeito, então as suítes são validadas quebrando o código de propósito, uma mutação por vez, e vendo se algum teste acusa.
+
+Duas rodadas até agora no frontend: 28 mutações e 28 acusadas na primeira; 18 e 16 na segunda. Das duas sobreviventes, uma era mutante equivalente e **a outra era buraco de verdade**, que virou teste. No backend: 4 de 4 no resolvedor de cliente, 4 de 4 na contagem de erros de login, 2 de 2 no padrão da documentação da API e 6 de 6 nas regras dos dados da loja.
+
+O registro dessas rodadas, incluindo o que escapou e por quê, está em [`docs/features/vitrine.md`](docs/features/vitrine.md) e [`docs/features/auth.md`](docs/features/auth.md).
 
 ## API
 
@@ -166,9 +203,13 @@ Teste que passa de primeira é suspeito. A suíte do frontend foi validada quebr
 | `POST` | `/v1/product` | ADMIN |
 | `PATCH` | `/v1/product/{id}` | ADMIN |
 | `DELETE` | `/v1/product/{id}` | ADMIN |
+| `GET` | `/v1/settings` | público |
+| `PUT` | `/v1/settings` | ADMIN |
 | `GET` | `/uploads/**` | público |
 
 </details>
+
+A documentação viva (`/swagger` e `/v3/api-docs`) **não sobe por padrão**: ela lista cada rota, cada campo e quem precisa de token, o que é o mapa do sistema para quem procura por onde entrar. O compose de desenvolvimento a liga explicitamente com `SWAGGER_ENABLED`.
 
 ## Segurança
 
@@ -178,10 +219,14 @@ Decisões que valem conhecer antes de mexer no código.
 - Upload identifica o tipo pelos **bytes** do arquivo, não pelo `Content-Type` declarado, e descarta o nome original.
 - Log registra pseudônimo, nunca e-mail.
 - Respostas de erro não revelam se uma conta existe.
-- Rate limit em login e registro, antes de chegar ao banco.
 - Unicidade de e-mail garantida por constraint, não por verificação prévia.
+- Erros de senha são contados **por conta**, e a senha certa passa mesmo com o contador estourado: adivinhar senha fica caro sem que errar a senha de alguém vire uma forma de trancar essa pessoa.
+- O site manda `Content-Security-Policy`, `nosniff`, `X-Frame-Options`, `Referrer-Policy` e `Permissions-Policy`, e não anuncia a versão do framework.
+- Nenhum dado pessoal no repositório: telefone, cidade e horário são exemplos nos testes e na documentação, e os valores reais vivem só no banco.
 
-Achados por área, incluindo os que continuam **abertos**, em [`docs/features/`](docs/features/).
+Os achados de cada área estão em [`docs/features/`](docs/features/), separados em corrigidos, **abertos** (com o motivo de continuarem abertos) e **verificado e OK** (o que já foi investigado e não está quebrado, para ninguém gastar uma tarde reinvestigando).
+
+O que está aberto hoje, resumido: o token da vendedora fica no navegador em `sessionStorage` (a correção real é cookie `HttpOnly`); não há HTTPS nem HSTS, porque ainda não há domínio; e o limite por origem só vale de verdade quando houver, na borda, um proxy que escreva o `X-Forwarded-For`.
 
 ## Documentação
 
@@ -189,7 +234,10 @@ Achados por área, incluindo os que continuam **abertos**, em [`docs/features/`]
 |---|---|
 | [`docs/features/`](docs/features/) | cada área: regras, achados de segurança, o que os testes cobrem |
 | [`docs/workflow/`](docs/workflow/) | GitFlow, CI/CD, code review, ambientes |
+| [`docs/features/backup-e-deploy.md`](docs/features/backup-e-deploy.md) | como salvar, restaurar e conferir depois de publicar |
 | [`CHANGELOG.md`](CHANGELOG.md) | o que mudou em cada versão |
+
+Os documentos de feature existem para responder rápido a três perguntas: **isso é seguro?** (achados com identificador, separados em corrigidos, abertos e verificado-e-OK), **isso tem teste?** (cada teste ligado ao risco que protege, e o que **não** está coberto) e **como eu confiro em produção?** (comandos somente leitura, prontos para copiar).
 
 ## Contribuindo
 
@@ -208,10 +256,13 @@ Commits seguem [Conventional Commits](https://www.conventionalcommits.org/pt-br/
 ## Estrutura
 
 ```
-auth-service/         identidade e emissão de token
-product-service/      catálogo e imagens
-florescer-web/        vitrine e painel (Next.js)
-docs/                 processo e documentação por feature
-.github/workflows/    CI, CD e análise estática
-docker-compose.yml    a stack completa
+auth-service/            identidade, emissão de token e JWKS      Java · MySQL
+product-service/         catálogo, imagens e dados da loja        Java · PostgreSQL
+florescer-web/           vitrine, painel e proxy das APIs         Next.js
+docs/features/           uma página por área, com os achados de segurança
+docs/workflow/           GitFlow, CI/CD, code review, ambientes
+scripts/                 backup, restauração e smoke test
+.github/workflows/       CI, CD e análise estática
+docker-compose.yml       a stack para desenvolver
+docker-compose.prod.yml  a stack para publicar, com as APIs fechadas
 ```
