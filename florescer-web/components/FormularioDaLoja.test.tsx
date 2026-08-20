@@ -48,8 +48,8 @@ const VAZIA: DadosDaLoja = {
 };
 
 const PREENCHIDA: DadosDaLoja = {
-  whatsappNumber: '5573998149668',
-  deliveryCity: 'Itabuna, BA',
+  whatsappNumber: '5511987654321',
+  deliveryCity: 'São Paulo, SP',
   instagramHandle: 'florescer.plantas',
   openingHours: 'Segunda a sábado, das 8h às 18h',
 };
@@ -81,8 +81,8 @@ describe('o que a tela mostra', () => {
   it('vem preenchida com o que já está salvo', () => {
     render(<FormularioDaLoja inicial={PREENCHIDA} />);
 
-    expect(campo('whatsappNumber')).toHaveValue('5573998149668');
-    expect(campo('deliveryCity')).toHaveValue('Itabuna, BA');
+    expect(campo('whatsappNumber')).toHaveValue('5511987654321');
+    expect(campo('deliveryCity')).toHaveValue('São Paulo, SP');
     expect(campo('instagramHandle')).toHaveValue('florescer.plantas');
     expect(campo('openingHours')).toHaveValue('Segunda a sábado, das 8h às 18h');
   });
@@ -102,23 +102,23 @@ describe('o que a tela mostra', () => {
   it('dá um exemplo de número, com país e DDD', () => {
     // "Digite o número" sem exemplo faz metade das pessoas esquecerem o 55.
     render(<FormularioDaLoja inicial={VAZIA} />);
-    expect(screen.getByText(/\+55 \(73\) 99814-9668/)).toBeInTheDocument();
+    expect(screen.getByText(/\+55 \(11\) 98765-4321/)).toBeInTheDocument();
   });
 });
 
 describe('salvar', () => {
   it('manda os quatro campos', async () => {
     render(<FormularioDaLoja inicial={VAZIA} />);
-    preencher('whatsappNumber', '5573998149668');
-    preencher('deliveryCity', 'Itabuna, BA');
+    preencher('whatsappNumber', '5511987654321');
+    preencher('deliveryCity', 'São Paulo, SP');
     preencher('instagramHandle', '@florescer.plantas');
     preencher('openingHours', 'Seg a sáb, 8h às 18h');
     salvarClicando();
 
     await waitFor(() => expect(salvar).toHaveBeenCalled());
     expect(enviado()).toEqual({
-      whatsappNumber: '5573998149668',
-      deliveryCity: 'Itabuna, BA',
+      whatsappNumber: '5511987654321',
+      deliveryCity: 'São Paulo, SP',
       instagramHandle: '@florescer.plantas',
       openingHours: 'Seg a sáb, 8h às 18h',
     });
@@ -128,11 +128,11 @@ describe('salvar', () => {
     // Limpar aqui esconderia da API o que a pessoa realmente escreveu, e a
     // normalização precisa valer também para quem chama a API direto.
     render(<FormularioDaLoja inicial={VAZIA} />);
-    preencher('whatsappNumber', '+55 (73) 99814-9668');
+    preencher('whatsappNumber', '+55 (11) 98765-4321');
     salvarClicando();
 
     await waitFor(() => expect(salvar).toHaveBeenCalled());
-    expect(enviado().whatsappNumber).toBe('+55 (73) 99814-9668');
+    expect(enviado().whatsappNumber).toBe('+55 (11) 98765-4321');
   });
 
   it('leva o token, senão a API recusa', async () => {

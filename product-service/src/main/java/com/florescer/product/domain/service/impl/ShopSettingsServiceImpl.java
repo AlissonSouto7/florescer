@@ -90,7 +90,7 @@ public class ShopSettingsServiceImpl implements ShopSettingsService {
      * O telefone como o wa.me exige: só dígitos, e só se der para ligar.
      *
      * <p>A validação acontece <b>aqui</b>, e não numa anotação do DTO, porque
-     * ela precisa olhar o número já sem pontuação. "+55 (73) 99814-9668" tem 19
+     * ela precisa olhar o número já sem pontuação. "+55 (11) 98765-4321" tem 19
      * caracteres e 13 dígitos: recusá-lo por causa dos parênteses seria obrigar
      * a pessoa a digitar do jeito que a máquina prefere.
      */
@@ -110,7 +110,7 @@ public class ShopSettingsServiceImpl implements ShopSettingsService {
 
         if (digitos.length() < MINIMO_DE_DIGITOS || digitos.length() > MAXIMO_DE_DIGITOS) {
             throw new InvalidSettingsException("whatsappNumber",
-                    "Digite o número com o código do país e o DDD. Exemplo: 5573998149668");
+                    "Digite o número com o código do país e o DDD. Exemplo: 5511987654321");
         }
 
         return digitos;

@@ -18,7 +18,7 @@ import { linkDeCompra, podeComprar, temNumero } from './whatsapp';
  * - número ausente: `wa.me/` sem número abre uma página de erro do WhatsApp.
  */
 
-const NUMERO = '5573998149668';
+const NUMERO = '5511987654321';
 
 /** O texto que a vendedora vai receber, já decodificado. */
 function mensagemDe(link: string): string {

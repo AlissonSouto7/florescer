@@ -32,7 +32,7 @@ vi.mock('next/link', () => linkFalso());
 const PRECO = /^R\$\s49,90$/;
 
 /** A loja tem número configurado na maioria dos casos. */
-const NUMERO = '5573998149668';
+const NUMERO = '5511987654321';
 
 describe('o que o cartão mostra', () => {
   it('leva para o detalhe da planta', () => {

@@ -31,15 +31,15 @@ public record ShopSettingsRequest(
         // Aceita como a pessoa digita: com espaço, parênteses, hífen, ponto e o
         // sinal de mais. A validação que importa (10 a 15 dígitos) acontece no
         // serviço, DEPOIS de tirar a pontuação: exigir aqui recusaria
-        // "+55 (73) 99814-9668", que é justamente como se escreve um telefone.
+        // "+55 (11) 98765-4321", que é justamente como se escreve um telefone.
         @Pattern(regexp = "^[-0-9 ()+.]*$",
                 message = "Use apenas números e os sinais + ( ) - . no telefone")
         @Size(max = 30, message = "O telefone não pode passar de 30 caracteres")
-        @Schema(description = "WhatsApp que recebe os pedidos, apenas dígitos", example = "5573998149668")
+        @Schema(description = "WhatsApp que recebe os pedidos, apenas dígitos", example = "5511987654321")
         String whatsappNumber,
 
         @Size(max = 120, message = "A cidade não pode passar de 120 caracteres")
-        @Schema(description = "Cidade onde a vendedora entrega", example = "Itabuna, BA")
+        @Schema(description = "Cidade onde a vendedora entrega", example = "São Paulo, SP")
         String deliveryCity,
 
         /**
