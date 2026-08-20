@@ -53,8 +53,8 @@ public class ShopSettings {
     /**
      * Só dígitos, com país e DDD, como o wa.me exige.
      *
-     * <p>Guardar "(73) 99814-9668" faria o link virar
-     * {@code wa.me/(73) 99814-9668}, que abre uma página de erro. A limpeza
+     * <p>Guardar "(11) 98765-4321" faria o link virar
+     * {@code wa.me/(11) 98765-4321}, que abre uma página de erro. A limpeza
      * acontece antes de chegar aqui, e o CHECK do banco é a última barreira.
      */
     @Column(name = "whatsapp_number", length = 20)

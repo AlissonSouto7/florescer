@@ -15,10 +15,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
  */
 public record ShopSettingsResponse(
 
-        @Schema(description = "WhatsApp que recebe os pedidos, apenas dígitos", example = "5573998149668")
+        @Schema(description = "WhatsApp que recebe os pedidos, apenas dígitos", example = "5511987654321")
         String whatsappNumber,
 
-        @Schema(description = "Cidade onde a vendedora entrega", example = "Itabuna, BA")
+        @Schema(description = "Cidade onde a vendedora entrega", example = "São Paulo, SP")
         String deliveryCity,
 
         /** Sempre sem o arroba: quem monta o link decide como exibir. */

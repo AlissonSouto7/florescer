@@ -19,8 +19,8 @@ import { LOJA_VAZIA, buscarDadosDaLoja, linkDoInstagram, salvarDadosDaLoja } fro
 let fetchFalso: ReturnType<typeof vi.fn>;
 
 const RESPOSTA = {
-  whatsappNumber: '5573998149668',
-  deliveryCity: 'Itabuna, BA',
+  whatsappNumber: '5511987654321',
+  deliveryCity: 'São Paulo, SP',
   instagramHandle: 'florescer.plantas',
   openingHours: 'Segunda a sábado, das 8h às 18h',
 };

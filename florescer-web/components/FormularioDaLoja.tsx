@@ -86,7 +86,7 @@ export function FormularioDaLoja({ inicial }: { inicial: DadosDaLoja }) {
         <Campo
           id="whatsappNumber"
           rotulo="WhatsApp que recebe os pedidos"
-          dica="Com o código do país e o DDD. Pode digitar com parênteses e traço, exemplo: +55 (73) 99814-9668"
+          dica="Com o código do país e o DDD. Pode digitar com parênteses e traço, exemplo: +55 (11) 98765-4321"
           erro={erros.whatsappNumber}
         >
           <input
@@ -95,7 +95,7 @@ export function FormularioDaLoja({ inicial }: { inicial: DadosDaLoja }) {
             inputMode="tel"
             autoComplete="tel"
             defaultValue={inicial.whatsappNumber ?? ''}
-            placeholder="55 73 99814-9668"
+            placeholder="55 11 98765-4321"
             className={ESTILO_INPUT}
           />
         </Campo>
@@ -117,7 +117,7 @@ export function FormularioDaLoja({ inicial }: { inicial: DadosDaLoja }) {
             id="deliveryCity"
             name="deliveryCity"
             defaultValue={inicial.deliveryCity ?? ''}
-            placeholder="Itabuna e região"
+            placeholder="São Paulo e região"
             className={ESTILO_INPUT}
           />
         </Campo>

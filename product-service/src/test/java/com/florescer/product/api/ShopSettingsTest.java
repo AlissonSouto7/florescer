@@ -92,14 +92,14 @@ class ShopSettingsTest extends AbstractIntegrationTest {
         mockMvc.perform(put(ROTA)
                         .header("Authorization", comoAdmin())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(corpo("5573998149668", "Itabuna, BA", "florescer.plantas",
+                        .content(corpo("5511987654321", "São Paulo, SP", "florescer.plantas",
                                 "Segunda a sábado, das 8h às 18h")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.whatsappNumber").value("5573998149668"));
+                .andExpect(jsonPath("$.whatsappNumber").value("5511987654321"));
 
         mockMvc.perform(get(ROTA))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.deliveryCity").value("Itabuna, BA"))
+                .andExpect(jsonPath("$.deliveryCity").value("São Paulo, SP"))
                 .andExpect(jsonPath("$.openingHours").value("Segunda a sábado, das 8h às 18h"));
     }
 
@@ -108,7 +108,7 @@ class ShopSettingsTest extends AbstractIntegrationTest {
     void semTokenNaoAltera() throws Exception {
         mockMvc.perform(put(ROTA)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(corpo("5573998149668", null, null, null)))
+                        .content(corpo("5511987654321", null, null, null)))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -120,7 +120,7 @@ class ShopSettingsTest extends AbstractIntegrationTest {
         mockMvc.perform(put(ROTA)
                         .header("Authorization", "Bearer " + TestTokens.comEscopo("BASIC"))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(corpo("5573998149668", null, null, null)))
+                        .content(corpo("5511987654321", null, null, null)))
                 .andExpect(status().isForbidden());
     }
 
@@ -129,15 +129,15 @@ class ShopSettingsTest extends AbstractIntegrationTest {
     @ParameterizedTest(name = "o número digitado como \"{0}\" é gravado como \"{1}\"")
     @CsvSource(delimiter = '|', value = {
             // Como a pessoa digita           | Como precisa ficar
-            "5573998149668                    | 5573998149668",
-            "55 73 99814-9668                 | 5573998149668",
-            "+55 (73) 99814-9668              | 5573998149668",
-            "55-73-99814.9668                 | 5573998149668",
+            "5511987654321                    | 5511987654321",
+            "55 11 98765-4321                 | 5511987654321",
+            "+55 (11) 98765-4321              | 5511987654321",
+            "55-11-98765.4321                 | 5511987654321",
     })
     @DisplayName("o número é gravado só com dígitos, venha como vier")
     void limpaONumero(String digitado, String esperado) throws Exception {
-        // O wa.me monta o link com o que estiver aqui: "(73) 99814-9668" viraria
-        // wa.me/(73) 99814-9668, que abre uma página de erro do WhatsApp.
+        // O wa.me monta o link com o que estiver aqui: "(11) 98765-4321" viraria
+        // wa.me/(11) 98765-4321, que abre uma página de erro do WhatsApp.
         mockMvc.perform(put(ROTA)
                         .header("Authorization", comoAdmin())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -232,9 +232,9 @@ class ShopSettingsTest extends AbstractIntegrationTest {
         mockMvc.perform(put(ROTA)
                         .header("Authorization", comoAdmin())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(corpo(null, "  Itabuna, BA  ", null, null)))
+                        .content(corpo(null, "  São Paulo, SP  ", null, null)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.deliveryCity").value("Itabuna, BA"));
+                .andExpect(jsonPath("$.deliveryCity").value("São Paulo, SP"));
     }
 
     @Test
@@ -257,7 +257,7 @@ class ShopSettingsTest extends AbstractIntegrationTest {
         //
         // Filtrar "<" aqui daria falsa sensação de segurança e quebraria nomes
         // legítimos: uma loja pode se chamar "Casa & Jardim <3".
-        String comSinais = "Casa & Jardim <3, Itabuna";
+        String comSinais = "Casa & Jardim <3, São Paulo";
 
         mockMvc.perform(put(ROTA)
                         .header("Authorization", comoAdmin())

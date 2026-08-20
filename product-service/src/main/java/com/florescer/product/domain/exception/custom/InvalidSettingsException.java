@@ -8,7 +8,7 @@ import lombok.Getter;
  * Um dado da loja que não serve, com a mensagem no campo que o causou.
  *
  * <p>Existe porque a validação do telefone só pode acontecer <b>depois</b> da
- * limpeza. A pessoa digita "+55 (73) 99814-9668", e é o número sem pontuação que
+ * limpeza. A pessoa digita "+55 (11) 98765-4321", e é o número sem pontuação que
  * precisa ter entre 10 e 15 dígitos. Validar antes recusaria exatamente o
  * formato que ela costuma usar, e obrigá-la a digitar sem parênteses seria fazer
  * a pessoa trabalhar por não querermos.
