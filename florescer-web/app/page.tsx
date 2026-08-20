@@ -23,10 +23,34 @@ export default async function Vitrine({ searchParams }: { searchParams: Promise<
   const filtros = paraFiltros(busca);
 
   let pagina;
+  let faixa = { minimo: 0, maximo: 200 };
   let erro: string | null = null;
 
   try {
-    pagina = await listarPlantas(filtros);
+    /**
+     * A faixa de preço vem do estoque, e não de valores escolhidos a dedo.
+     *
+     * Numa loja onde tudo custa menos de R$ 60, oferecer um limite de R$ 200
+     * não ajuda ninguém, e a lista fixa de tetos que existia antes obrigava a
+     * pessoa a aceitar um corte que alguém escolheu por ela.
+     *
+     * A segunda busca ignora os filtros de propósito: se ela os respeitasse, os
+     * extremos encolheriam junto com o resultado, e arrastar o controle mudaria
+     * a própria régua debaixo da mão de quem arrasta.
+     */
+    const [resultado, catalogo] = await Promise.all([
+      listarPlantas(filtros),
+      listarPlantas({ size: 50 }),
+    ]);
+    pagina = resultado;
+
+    const precos = catalogo.content.map((p) => p.price);
+    if (precos.length > 0) {
+      faixa = {
+        minimo: Math.floor(Math.min(...precos) / 5) * 5,
+        maximo: Math.ceil(Math.max(...precos) / 5) * 5,
+      };
+    }
   } catch {
     // A vitrine é a primeira coisa que alguém vê. Se a API estiver fora, mostra
     // uma mensagem honesta em vez da tela de erro do framework.
@@ -42,12 +66,14 @@ export default async function Vitrine({ searchParams }: { searchParams: Promise<
         </p>
       </header>
 
-      <div className="grid gap-8 lg:grid-cols-[220px_1fr]">
-        <Suspense fallback={<div className="text-sm text-stone-400">Carregando filtros...</div>}>
-          <Filtros />
-        </Suspense>
+      {/* Os filtros ficam acima, e não numa coluna ao lado. No celular a coluna
+          empurrava a primeira planta para fora da tela, e quem chega numa loja
+          quer ver o produto antes de filtrar. */}
+      <Suspense fallback={<div className="mb-6 h-10 w-28 animate-pulse rounded-full bg-stone-200" />}>
+        <Filtros faixaDePreco={faixa} quantidade={pagina?.totalElements ?? 0} />
+      </Suspense>
 
-        <section>
+      <section>
           {erro && (
             <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800">
               {erro}
@@ -71,7 +97,7 @@ export default async function Vitrine({ searchParams }: { searchParams: Promise<
                   : `${pagina.totalElements} plantas encontradas`}
               </p>
 
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
+              <div className="grid grid-cols-2 gap-4 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
                 {pagina.content.map((planta) => (
                   <CardPlanta key={planta.id} planta={planta} />
                 ))}
@@ -82,8 +108,7 @@ export default async function Vitrine({ searchParams }: { searchParams: Promise<
               )}
             </>
           )}
-        </section>
-      </div>
+      </section>
     </main>
   );
 }
