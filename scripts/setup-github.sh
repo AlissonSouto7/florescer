@@ -37,6 +37,12 @@ if [ "$STEP" = "protection" ]; then
       "build (auth-service)",
       "build (product-service)",
       "build (florescer-web)",
+      "image (auth-service, amd64)",
+      "image (auth-service, arm64)",
+      "image (product-service, amd64)",
+      "image (product-service, arm64)",
+      "image (florescer-web, amd64)",
+      "image (florescer-web, arm64)",
       "secret scan",
       "analyze (java-kotlin)",
       "analyze (javascript-typescript)"
