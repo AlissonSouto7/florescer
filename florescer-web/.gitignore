@@ -42,3 +42,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# arquivos de regra para ferramenta de IA, gerados pelo `next dev`
+# (node_modules/next/dist/server/lib/generate-agent-files.js).
+# Ficam fora do git: o repositório é o trabalho, não a ferramenta usada
+# para escrevê-lo. Eles voltam sozinhos a cada `next dev`, como alteração
+# não rastreada, e é assim que devem ficar.
+AGENTS.md
+CLAUDE.md
