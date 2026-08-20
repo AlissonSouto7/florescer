@@ -53,6 +53,18 @@ describe('buscarDadosDaLoja', () => {
     expect(endereco).toContain('settings');
   });
 
+  it('não guarda em cache, senão ela salva e continua vendo o valor antigo', async () => {
+    // Este caso nasceu de uma mutação que passou verde: trocar `no-store` por
+    // `revalidate: 60` não quebrava teste nenhum, e era exatamente o defeito
+    // que já tinha acontecido uma vez. Ela salvava o número, abria a loja, via
+    // o antigo e concluía que não tinha salvado.
+    await buscarDadosDaLoja();
+
+    const opcoes = fetchFalso.mock.calls[0][1] as RequestInit;
+    expect(opcoes.cache).toBe('no-store');
+    expect(opcoes).not.toHaveProperty('next');
+  });
+
   it('devolve a loja vazia quando a API responde erro', async () => {
     // A alternativa seria propagar a falha, e aí uma API instável derrubaria a
     // vitrine inteira por causa do rodapé.
