@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { alterarPlanta, errosDe, salvarPlanta, type Planta } from '@/lib/api';
 import { AMBIENTE, DIFICULDADE, LUMINOSIDADE, LUMINOSIDADE_DETALHE, REGA, caminhoDaImagem } from '@/lib/rotulos';
 import { lerToken } from '@/lib/sessao';
+import { Select } from './Select';
 
 /**
  * Cadastro de planta.
@@ -172,11 +173,11 @@ export function FormularioPlanta({ planta }: { planta?: Planta }) {
         </div>
 
         <Campo id="status" rotulo="Situação" erro={erros.status}>
-          <select id="status" name="status" defaultValue={planta?.status ?? 'ATIVO'} className={ESTILO_INPUT}>
+          <Select id="status" name="status" defaultValue={planta?.status ?? 'ATIVO'}>
             <option value="ATIVO">Aparece na vitrine</option>
             <option value="INATIVO">Escondida</option>
             <option value="ESGOTADO">Esgotada</option>
-          </select>
+          </Select>
         </Campo>
       </Secao>
 
@@ -195,48 +196,38 @@ export function FormularioPlanta({ planta }: { planta?: Planta }) {
         </Campo>
 
         <Campo id="light" rotulo="Quanta luz ela aguenta" erro={erros.light} obrigatorio>
-          <select id="light" name="light" defaultValue={planta?.light ?? 'MEIA_SOMBRA'} className={ESTILO_INPUT}>
+          <Select id="light" name="light" defaultValue={planta?.light ?? 'MEIA_SOMBRA'}>
             {Object.entries(LUMINOSIDADE).map(([valor, rotulo]) => (
               <option key={valor} value={valor}>
                 {rotulo} &mdash; {LUMINOSIDADE_DETALHE[valor as keyof typeof LUMINOSIDADE_DETALHE]}
               </option>
             ))}
-          </select>
+          </Select>
         </Campo>
 
         <Campo id="watering" rotulo="De quanto em quanto tempo regar" erro={erros.watering} obrigatorio>
-          <select id="watering" name="watering" defaultValue={planta?.watering ?? 'SEMANAL'} className={ESTILO_INPUT}>
+          <Select id="watering" name="watering" defaultValue={planta?.watering ?? 'SEMANAL'}>
             {Object.entries(REGA).map(([valor, rotulo]) => (
               <option key={valor} value={valor}>{rotulo}</option>
             ))}
-          </select>
+          </Select>
         </Campo>
 
         <div className="grid grid-cols-2 gap-4">
           <Campo id="environment" rotulo="Onde ela vive bem" erro={erros.environment} obrigatorio>
-            <select
-              id="environment"
-              name="environment"
-              defaultValue={planta?.environment ?? 'INTERNO'}
-              className={ESTILO_INPUT}
-            >
+            <Select id="environment" name="environment" defaultValue={planta?.environment ?? 'INTERNO'}>
               {Object.entries(AMBIENTE).map(([valor, rotulo]) => (
                 <option key={valor} value={valor}>{rotulo}</option>
               ))}
-            </select>
+            </Select>
           </Campo>
 
           <Campo id="difficulty" rotulo="Dá trabalho?" erro={erros.difficulty} obrigatorio>
-            <select
-              id="difficulty"
-              name="difficulty"
-              defaultValue={planta?.difficulty ?? 'FACIL'}
-              className={ESTILO_INPUT}
-            >
+            <Select id="difficulty" name="difficulty" defaultValue={planta?.difficulty ?? 'FACIL'}>
               {Object.entries(DIFICULDADE).map(([valor, rotulo]) => (
                 <option key={valor} value={valor}>{rotulo}</option>
               ))}
-            </select>
+            </Select>
           </Campo>
         </div>
 
