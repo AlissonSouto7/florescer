@@ -4,7 +4,7 @@ A interface: onde quem compra escolhe a planta e onde quem vende cadastra.
 
 **Onde fica**: `florescer-web`, porta 3000, Next.js 16 com React 19. Também é o proxy: o navegador fala só com este domínio, e as chamadas para `/api/**` e `/uploads/**` são repassadas às APIs pela rede interna.
 **Status**: funcional.
-**Última revisão**: 19/08/2026.
+**Última revisão**: 20/08/2026.
 
 ## Telas
 
@@ -16,6 +16,7 @@ A interface: onde quem compra escolhe a planta e onde quem vende cadastra.
 | `/admin` | ADMIN | lista das plantas, com editar e excluir |
 | `/admin/nova` | ADMIN | cadastro |
 | `/admin/[id]` | ADMIN | edição |
+| `/admin/configuracoes` | ADMIN | dados da loja: WhatsApp, cidade, Instagram e horário |
 
 ## Decisões e por quê
 
@@ -107,7 +108,7 @@ Uma armadilha junto: o destino do rewrite é **congelado no build**, não lido e
 - **A tela esconder o botão não é a proteção.** Quem protege é o `@PreAuthorize` no backend, que continua valendo para quem chamar a API direto. A interface esconde por conforto, não por segurança.
 - **O `next/image` só carrega de host declarado** no `next.config.ts`. Sem isso, uma URL vinda da API viraria requisição feita pelo nosso servidor, que é caminho para SSRF.
 - **Cabeçalhos de segurança** (`nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`) são enviados pelo próprio Next.
-- **O número de WhatsApp vem de configuração**, nunca do código.
+- **O número de WhatsApp vem do banco**, editado pela vendedora, nunca do código: [dados-da-loja.md](dados-da-loja.md).
 - **Nenhum `dangerouslySetInnerHTML`.** Todo texto vindo da API é renderizado como texto pelo React.
 
 ### Abertos
@@ -119,7 +120,7 @@ Uma armadilha junto: o destino do rewrite é **congelado no build**, não lido e
 
 ## Testes
 
-112 testes em Vitest com Testing Library, rodando em jsdom. Medido em 19/08/2026 sobre `lib/` e `components/`: 98,1% de linhas e 91,6% de ramos.
+249 testes em Vitest com Testing Library, rodando em jsdom. Medido em 20/08/2026: `lib/` com 100% de linhas e 92% de ramos, `components/` com 97,9% de linhas e 93,6% de ramos.
 
 ```bash
 cd florescer-web
@@ -131,13 +132,23 @@ O gate tem piso por pasta, e não um piso global: `lib/**` exige 95% de linhas e
 
 | Arquivo | Testes | Risco que protege |
 |---|---|---|
-| `BotaoWhatsApp` | 10 | mensagem corrompida por acento, `&` ou `#`; botão em planta sem estoque; link para `wa.me` sem número |
-| `FormularioPlanta` | 16 | preço com vírgula virando NaN; checkbox desmarcado sumindo do payload; cadastro sem foto indo à API; duplo clique cadastrando duas vezes |
-| `Filtros` | 16 | filtro que não chega à URL; página antiga preservada ao trocar de filtro; `petSafe=false` devolvendo só as tóxicas |
-| `CardPlanta` | 12 | foto apontando para o host interno; selo de esgotada ausente; "null" na tela em planta antiga |
+| `Filtros` | 32 | filtro que não chega à URL; página antiga preservada ao trocar de filtro; `petSafe=false` devolvendo só as tóxicas; painel aberto travando a rolagem da página atrás dele |
 | `lib/api` | 29 | parâmetro que deixa de ser enviado; 404 virando tela de erro; parte `product` sem `application/json`; login revelando se a conta existe; **URL com host, que reabriria as APIs para a internet**; falha de sistema disfarçada de senha errada |
+| `Select` | 22 | lista que não abre pelo teclado; `aria-activedescendant` no elemento errado, que faz o leitor de tela não anunciar a troca; valor que não entra no `FormData` |
+| `CardPlanta` | 17 | foto apontando para o host interno; selo de esgotada ausente; "null" na tela em planta antiga |
 | `lib/sessao` | 17 | payload base64url quebrando o `atob` e gerando laço de login; `ADMINISTRADOR` passando por `ADMIN`; token indo para `localStorage` |
+| `FormularioPlanta` | 16 | preço com vírgula virando NaN; checkbox desmarcado sumindo do payload; cadastro sem foto indo à API; duplo clique cadastrando duas vezes |
+| `FormularioDaLoja` | 14 | ver [dados-da-loja.md](dados-da-loja.md) |
+| `FiltroDePreco` | 14 | URL mudando a cada pixel arrastado; arrastar até o topo deixando de significar "sem teto" |
+| `lib/whatsapp` | 14 | mensagem corrompida por acento, `&` ou `#`; botão em planta sem estoque; link para `wa.me` sem número |
 | `lib/rotulos` | 12 | URL da imagem voltando absoluta (issue #89); enum vazando para a tela |
+| `lib/loja` | 12 | API fora do ar derrubando a vitrine inteira por causa do rodapé; link do Instagram montado com `@` |
+| `BotaoWhatsApp` | 10 | botão em planta sem estoque; loja sem número mandando o visitante para uma página de erro do WhatsApp; aba nova com acesso a esta janela |
+| `DadosEstruturados` | 10 | preço em JSON-LD no formato que a pessoa lê, e não no que o Google aceita; `<` no nome da planta fechando o `<script>` |
+| `app/sitemap` | 10 | sitemap gerado vazio no build; teto de 50 por página cortando o catálogo em silêncio |
+| `MenuDaVendedora` | 8 | menu aparecendo para quem não tem sessão; sessão vencida ainda mostrando o painel |
+| `lib/site` | 7 | endereço público caindo para `localhost` e tirando a foto da prévia do link |
+| `app/robots` | 5 | painel e login indo parar na busca |
 
 ### Prova de que os testes não são vacuosos
 
@@ -146,6 +157,8 @@ O gate tem piso por pasta, e não um piso global: `lib/**` exige 95% de linhas e
 A primeira rodada teve 22 de 23. A que escapou removia a conversão base64url de `papeis()`, e o teste dessa conversão exercitava só `expirado()`: a conversão está escrita duas vezes, uma em cada função, e o teste cobria uma só. O caso faltante virou teste, e a mutação passou a ser acusada.
 
 O script exige baseline verde antes de começar. Sem isso, "a suíte falhou" não provaria nada: ela já podia estar falhando antes.
+
+Uma segunda rodada, em 20/08/2026, cobriu o código dos dados da loja, que não existia na primeira: 18 mutações, 16 acusadas. Das duas que passaram, uma é mutante equivalente (trocar o `return LOJA_VAZIA` por um `throw` cai no `catch` logo abaixo e produz o mesmo resultado, então não há comportamento novo para um teste observar) e **a outra era buraco real**: nada garantia que o rodapé não voltasse a guardar em cache, que foi justamente o defeito C-3 de [dados-da-loja.md](dados-da-loja.md). Virou teste, com vermelho antes e verde depois.
 
 ### Verificado com a stack de produção
 
@@ -193,6 +206,7 @@ No navegador, o que confirma que o essencial funciona: abrir a vitrine, marcar "
 
 | Data | O que mudou |
 |---|---|
+| 20/08/2026 | rodapé alimentado pelos dados da loja; filtros refeitos para celular (gaveta) e para PC (painel que encolhe); `Select` próprio no lugar do nativo; filtro por preço; atalho de WhatsApp no cartão; catálogo com plantas e fotos reais |
 | 19/08/2026 | o navegador passou a falar só com o domínio do site; as APIs saíram da internet |
 | 19/08/2026 | 112 testes automatizados, gate de cobertura e job próprio no CI |
 | 11/08/2026 | vitrine, filtros, detalhe, WhatsApp, login e painel da vendedora |
