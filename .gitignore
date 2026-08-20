@@ -48,3 +48,6 @@ node_modules/
 # Ignore bin and build if for some reason they appear
 bin/
 build/
+# Backups locais: contêm o catálogo inteiro e as fotos, e não pertencem ao
+# repositório. O servidor guarda os dele fora daqui.
+/backups/

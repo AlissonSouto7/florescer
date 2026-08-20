@@ -140,6 +140,10 @@ services:
       PRODUCT_API: http://product-service:8081
       AUTH_API: http://auth-service:8080
       WHATSAPP_NUMBER: ${WHATSAPP_NUMBER:?sem o número, o botão de comprar não aparece}
+      # O endereço público da loja, com https. Entra no sitemap, no robots e na
+      # prévia do link compartilhado no WhatsApp. Errado aqui não quebra tela
+      # nenhuma: faz o Google indexar endereços que não existem.
+      SITE_URL: ${SITE_URL}
     # A única porta publicada da stack. Em 127.0.0.1 porque quem atende a
     # internet é o proxy com HTTPS, na frente; expor direto serviria o site em
     # HTTP puro e deixaria a senha da vendedora trafegar em claro.

@@ -153,6 +153,9 @@ services:
       # Lido a cada renderizacao, num componente de servidor: trocar o numero e
       # so reiniciar o container, sem reconstruir a imagem.
       WHATSAPP_NUMBER: ${WHATSAPP_NUMBER:-}
+      # Endereco publico da loja, usado pelo sitemap, pelo robots e pela previa
+      # do link compartilhado. Em desenvolvimento e o proprio localhost.
+      SITE_URL: ${SITE_URL:-http://localhost:3000}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:

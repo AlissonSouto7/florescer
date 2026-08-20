@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { BotaoWhatsApp } from '@/components/BotaoWhatsApp';
+import { DadosEstruturados } from '@/components/DadosEstruturados';
 import { buscarPlanta } from '@/lib/api';
 import {
   AMBIENTE,
@@ -28,10 +29,16 @@ export async function generateMetadata({ params }: Props) {
   return {
     title: `${planta.name} | Florescer`,
     description: planta.description,
+    alternates: { canonical: `/planta/${planta.id}` },
     openGraph: {
       title: planta.name,
       description: planta.description,
-      images: [planta.imageUrl],
+      // O caminho, e não a URL que a API devolve: aquela traz o host de quem
+      // chamou, que em produção é o nome do serviço na rede do Docker. Quem
+      // recebesse o link no WhatsApp não veria foto nenhuma. O `metadataBase`
+      // do layout transforma isto no endereço público.
+      images: [caminhoDaImagem(planta.imageUrl)],
+      type: 'website',
     },
   };
 }
@@ -47,6 +54,8 @@ export default async function DetalheDaPlanta({ params }: Props) {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
+      <DadosEstruturados planta={planta} />
+
       <Link href="/" className="mb-6 inline-block text-sm text-emerald-700 hover:underline">
         &larr; Voltar para as plantas
       </Link>
