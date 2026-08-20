@@ -1,11 +1,30 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
+import { enderecoDoSite } from '@/lib/site';
+
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Florescer',
-  description: 'Plantas com foto, tamanho, cuidados e preço.',
+  // Resolve todo caminho relativo dos metadados (imagem de compartilhamento,
+  // canonical) contra o endereço público. Sem isto o Next avisa no build e
+  // monta as URLs contra localhost, então a prévia do link no WhatsApp fica sem
+  // foto para todo mundo que não seja você.
+  metadataBase: new URL(enderecoDoSite()),
+  title: {
+    default: 'Florescer | Plantas',
+    // Cada página completa o título: "Samambaia | Florescer".
+    template: '%s | Florescer',
+  },
+  description: 'Plantas com foto, tamanho, cuidados e preço. Fale direto pelo WhatsApp.',
+  // O painel e o login não devem aparecer em busca. O robots.txt já pede isso,
+  // e a meta tag é a instrução que vale mesmo quando alguém chega por um link.
+  robots: { index: true, follow: true },
+  openGraph: {
+    type: 'website',
+    locale: 'pt_BR',
+    siteName: 'Florescer',
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {

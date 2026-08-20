@@ -55,6 +55,27 @@ Duas armadilhas que só aparecem rodando:
 
 **O rewrite repassa o header `Origin` do navegador**, e o Spring aplica a política de CORS ao ver esse header, mesmo numa requisição que para o navegador é same-origin. Com `CORS_ALLOWED_ORIGINS` vazio, todo login responde `403 Invalid CORS request`. Por isso o compose de produção declara o domínio público nos dois serviços, embora nenhum deles seja alcançado pelo navegador.
 
+## Ser encontrado no Google
+
+A vitrine é renderizada no servidor justamente para o buscador conseguir ler as plantas. Isso sozinho não basta: sem dizer o que existe e o que pode ser visitado, metade do esforço se perde.
+
+| Arquivo | O que resolve |
+|---|---|
+| `app/sitemap.ts` | entrega a lista completa das plantas disponíveis. Sem ela, o buscador só acha uma planta se alcançar o link dela partindo da vitrine, e o que caiu para a segunda página pode nunca ser encontrado |
+| `app/robots.ts` | libera a vitrine e mantém `/admin` e `/login` fora da busca. "florescer login" não é resultado útil, e cada visita de robô a uma página com sessão gasta o rastreamento que deveria ir para as plantas |
+| `components/DadosEstruturados.tsx` | descreve cada planta como `Product` do schema.org, o que faz o Google mostrar **foto, preço e disponibilidade no próprio resultado**, em vez de um link seco |
+| `app/not-found.tsx` | link antigo deixa de cair na tela padrão do Next, em inglês e sem volta. A maioria dos 404 aqui é link de planta vendida, compartilhado semanas antes, e essa pessoa quer plantas |
+
+Nada disso é proteção: quem impede o acesso ao painel é o backend, que recusa requisição sem token de ADMIN. O `noindex` das áreas internas é higiene de busca.
+
+### Três armadilhas encontradas ao fazer
+
+**O sitemap era gerado no build, e saía vazio.** O Next monta rotas estáticas durante o `next build`, quando a API não está de pé, e no Docker ela nem existe ainda, porque a rede sobe depois. A chamada falhava, o `catch` devolvia só a vitrine, e o arquivo ficava **sem nenhuma planta** até o primeiro revalidate. Medido: 1 URL logo após subir, 8 depois de expirar. Se o buscador pedisse nessa janela, concluiria que a loja tem uma página só. Resolvido com `dynamic = 'force-dynamic'`.
+
+**O `size` da API tem teto de 50.** `PageableFactory.MAX_PAGE_SIZE` recusa mais que isso com `400`, e não devolve uma lista cortada. A recusa é boa: um sitemap com metade das plantas passaria despercebido. Por isso o sitemap pagina em vez de pedir tudo de uma vez.
+
+**A imagem de compartilhamento apontava para o host interno.** O `openGraph` usava a `imageUrl` que a API devolve, que traz o host de quem chamou. Em produção seria `product-service:8081`, e quem recebesse o link no WhatsApp não veria foto. Agora vai o caminho, resolvido pelo `metadataBase` contra o endereço público.
+
 ## Segurança
 
 ### Achados corrigidos

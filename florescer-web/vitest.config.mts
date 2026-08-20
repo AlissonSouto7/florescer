@@ -47,6 +47,11 @@ export default defineConfig({
       thresholds: {
         'lib/**': { statements: 92, branches: 85, functions: 95, lines: 95 },
         'components/**': { statements: 92, branches: 88, functions: 90, lines: 93 },
+        // O sitemap e o robots são código de `app/`, mas com teste próprio:
+        // medidos em 100% de linhas e ramos em 20/08/2026. O piso alto é
+        // deliberado, porque um defeito aqui não aparece na tela. O sitemap
+        // errado só se manifesta no Google, semanas depois.
+        'app/{sitemap,robots}.ts': { statements: 95, branches: 90, functions: 95, lines: 95 },
       },
     },
   },
