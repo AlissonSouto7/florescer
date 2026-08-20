@@ -27,6 +27,18 @@ spring:
 springdoc:
   swagger-ui:
     path: /swagger
+    # A documentacao viva sai do ar em producao, por padrao.
+    #
+    # Ela lista cada rota, cada campo e quem precisa de token: e o mapa pronto
+    # do sistema para quem esta procurando por onde entrar. Em desenvolvimento
+    # vale muito; publicada, so ajuda quem esta do outro lado.
+    #
+    # O padrao e DESLIGADO de proposito. Ligado por padrao, esquecer de desligar
+    # publica tudo em silencio; desligado, o custo de esquecer e um Swagger que
+    # nao abre em dev, que aparece na hora e se resolve numa linha.
+    enabled: ${SWAGGER_ENABLED:false}
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:false}
 
 # CHAVE PUBLICA DE VALIDACAO DO JWT
 # COMO ESTE SERVICO DESCOBRE A CHAVE QUE VALIDA OS TOKENS

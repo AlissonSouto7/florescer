@@ -15,6 +15,7 @@ import org.springframework.security.web.SecurityFilterChain;
 
 import org.springframework.web.filter.CorsFilter;
 
+import com.florescer.auth.infrastructure.ratelimit.ClientResolver;
 import com.florescer.auth.infrastructure.ratelimit.RateLimitFilter;
 import com.florescer.auth.infrastructure.ratelimit.RateLimiter;
 
@@ -30,6 +31,7 @@ public class SecurityConfig {
 
 	public static final String SECURITY = "bearerAuth";
 	private final RateLimiter authRateLimiter;
+	private final ClientResolver clientResolver;
 
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -56,7 +58,7 @@ public class SecurityConfig {
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				// Antes de tudo: uma tentativa recusada não deve custar consulta
 				// ao banco nem verificação de BCrypt, que é cara de propósito.
-				.addFilterBefore(new RateLimitFilter(authRateLimiter), CorsFilter.class)
+				.addFilterBefore(new RateLimitFilter(authRateLimiter, clientResolver), CorsFilter.class)
 				.build();
 	}
 
