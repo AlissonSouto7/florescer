@@ -50,6 +50,21 @@ Todas públicas. A regra padrão é `anyRequest().authenticated()`, para que um 
 
 **O token não é validado por este serviço.** Quem valida é o resource server do Spring, pelo `JwtDecoder`. O serviço só emite.
 
+## Como o login é limitado, e por que não é pelo endereço
+
+Este sistema não consegue saber de onde veio a tentativa, e as duas formas de fingir que consegue falham para lados opostos. Ambas foram medidas contra a stack de pé, em 20/08/2026:
+
+| Como limitar | O que acontece | Medido |
+|---|---|---|
+| pelo endereço da conexão | o navegador fala com o site, e o site repassa: **toda tentativa do mundo chega do mesmo endereço**. Uma cota só para todos | dez `401` de um desconhecido pelo site, e em seguida `429` na senha **certa** da vendedora |
+| pelo `X-Forwarded-For` | o cliente também manda esse cabeçalho, e o Next repassa sem sobrescrever: **o atacante escolhe a própria cota** | quinze tentativas trocando o valor a cada uma, **nenhum `429`** |
+
+O que o atacante não escolhe é **a conta**. Para descobrir a senha da vendedora, é contra a conta dela que ele precisa tentar. Por isso a contagem é por conta.
+
+E a regra que impede a proteção de virar bloqueio: **a senha é verificada primeiro, e só quem erra é recusado**. Quem acerta entra mesmo com o contador estourado. Errar a senha de alguém não pode ser uma forma de trancar essa pessoa.
+
+O limite por origem continua no lugar, com o `ClientResolver`, por dois motivos: segura volume desatento, e passa a estar correto no dia em que houver na borda um proxy que escreva o cabeçalho, sem mudar código. Até lá, ele não é o que protege a senha.
+
 ## Achados de segurança
 
 ### Corrigidos
@@ -67,6 +82,8 @@ Todas públicas. A regra padrão é `anyRequest().authenticated()`, para que um 
 | A-9 | médio | corrida no registro: duas requisições simultâneas passavam pela consulta e a segunda quebrava com 500 | handler devolve o mesmo 409 do caminho normal |
 | A-10 | médio | rota inexistente respondia 500 | handler de `NoResourceFoundException` |
 | A-11 | baixo | `@Data` na entidade `User` colocava o hash da senha no `toString` | `@ToString.Exclude` nos campos sensíveis |
+| A-16 | alto | o limite de tentativas usava o endereço da conexão, e em produção **toda tentativa chega do site**, não do navegador. Resultado: uma cota só para o mundo inteiro. Dez senhas erradas de um desconhecido trancavam a vendedora por 60 segundos, e repetir a cada minuto a mantinha fora do painel. Custa dez requisições e não exige conta nenhuma. Medido: os dez 401 pelo site, e em seguida `429` na senha **certa** | `ClientResolver` lê o `X-Forwarded-For`, mas só quando a conexão vem de um proxy declarado, e contando da direita para a esquerda, que é a parte que o cliente não escreve |
+| A-17 | alto | a primeira correção do A-16 trocou um problema por outro **pior**: passar a ler o `X-Forwarded-For` tornou o limite contornável, porque **o Next repassa o cabeçalho do cliente sem sobrescrever**. Medido: quinze tentativas de login trocando o valor a cada uma, **nenhum `429`**. Adivinhar senha é pior que um bloqueio de 60 segundos | a contagem passou a ser **por conta**, que o atacante não escolhe, e com a regra que resolve o dilema: a verificação da senha vem primeiro e **só quem erra é recusado**, então a senha certa entra mesmo com o contador estourado e ninguém consegue trancar a vendedora |
 
 ### Abertos
 
@@ -74,8 +91,10 @@ Todas públicas. A regra padrão é `anyRequest().authenticated()`, para que um 
 |---|---|---|---|
 | A-12 | médio | uma chave ativa por vez: o JWKS publica um par só, então uma rotação invalida de imediato os tokens em circulação | o `kid` já existe e é o que torna a convivência possível; suportar um conjunto de chaves não estava nos critérios da #34 |
 | A-13 | médio | sem `aud` no token: qualquer serviço que confie na chave aceita qualquer token emitido | emitir e validar audience exige ordem de deploy (auth primeiro, product depois), senão todo token em circulação é recusado no intervalo. Merece PR próprio com essa ordem escrita |
+| A-18 | médio | o limite por origem só vale contra tráfego desatento enquanto não houver, na borda, um proxy que **escreva** o `X-Forwarded-For` (o nginx faz com `$proxy_add_x_forwarded_for`). Hoje quem manda o cabeçalho escolhe a própria cota | quem protege a senha é a contagem por conta (A-17), que não depende de cabeçalho. O `ClientResolver` já está pronto para o dia em que a borda existir, e passa a valer sem mudar código |
+| A-19 | médio | com o limite por origem contornável, cada tentativa de login continua custando uma verificação de BCrypt, que é cara de propósito: volume alto vira consumo de CPU | fechar isso exige limitar na borda, que é onde a conexão termina. Fica registrado em vez de escondido |
 | A-14 | baixo | sem refresh token nem revogação: um token vazado vale até expirar, em uma hora | fora do escopo desta entrega, listado no backlog |
-| A-15 | baixo | token guardado em `localStorage` no frontend, alcançável por XSS | mitigado pela CSP e pela eliminação de `innerHTML`; a correção real é cookie `HttpOnly`, que muda o contrato com o frontend |
+| A-15 | médio | token guardado em `sessionStorage` no frontend, alcançável por XSS | a linha anterior deste documento dizia "mitigado pela CSP", e **CSP não existia**: foi escrita como se a proteção estivesse no lugar. Hoje existe (ver `next.config.ts`), e ela limita a saída do dado, não a execução do script, porque o `script-src` ainda precisa de `'unsafe-inline'` para a hidratação do Next. A correção real é cookie `HttpOnly`, que muda o contrato com o frontend |
 
 ### Verificado e OK
 
@@ -85,6 +104,10 @@ Para ninguém reinvestigar:
 - **`UserDetailsServiceImpl` não tem consumidor explícito** desde a remoção do filtro, e continua necessário: o Spring o descobre como bean e o usa no `DaoAuthenticationProvider` do login. Os testes de login provam.
 - **O CORS funciona sem `.cors()` explícito na cadeia**, porque o Spring Security aplica o bean quando ele existe. A chamada está lá por visibilidade, e isso foi confirmado por experimento, não deduzido.
 - **O endpoint JWKS não publica material privado.** `toPublicJWK()` descarta `d`, `p`, `q`, `dp`, `dq`, `qi`, e um teste confere a ausência de cada um.
+- **Token com `alg: none` é recusado.** Testado contra a stack de pé: `DELETE` de produto com um token forjado sem assinatura responde `401`.
+- **Payload adulterado com a assinatura original é recusado.** Trocar o `sub` para outro endereço e manter a terceira parte devolve `401`.
+- **O emissor é validado** no product-service, por `JwtValidators.createDefaultWithIssuer`.
+- **A documentação viva é desligada por padrão** (`SWAGGER_ENABLED`), e o compose de desenvolvimento a liga explicitamente. Publicá-la entrega o mapa das rotas e de quem precisa de token.
 
 ## Testes
 
@@ -104,6 +127,20 @@ Para ninguém reinvestigar:
 | `HealthEndpointTest` (12) | health inacessível ao orquestrador; Actuator expondo configuração interna |
 
 **62 testes, cobertura medida em 88% de linha e 67% de ramo** (11/08/2026).
+
+### Prova de que os testes não são vacuosos
+
+Cada regra nova foi quebrada de propósito, uma por vez, com a suíte rodando entre cada quebra.
+
+| Alvo | Mutações | Acusadas |
+|---|---|---|
+| `ClientResolver` | 4 | 4 |
+| contagem de erros por conta | 4 | 4 |
+| documentação da API desligada por padrão | 2 | 2 |
+
+As que mais importam, porque quebram em silêncio: voltar a agrupar todo mundo no endereço da conexão (3 casos acusam), ler o **primeiro** valor do `X-Forwarded-For`, que é o que o atacante escreve (3 acusam), recusar **antes** de verificar a senha, que é o bug do bloqueio (1 acusa), e tirar o `@PreAuthorize` do `PUT` das configurações (1 acusa).
+
+**A primeira rodada mentiu, e vale registrar como.** Ela devolveu "6 de 6 escaparam", incluindo mutações impossíveis de passar despercebidas. O defeito era do script: ele não encontrava o `mvnw.cmd`, ficava sem saída e caía num relatório verde antigo em `target/surefire-reports`. Foi pego conferindo na mão uma das mutações, que acusava 3 falhas. O script passou a apagar o relatório antes de cada rodada e a tratar a ausência dele como erro. O modo de falha é traiçoeiro porque um verificador quebrado aprova tudo, e parece rigor.
 
 ### O que NÃO está coberto
 

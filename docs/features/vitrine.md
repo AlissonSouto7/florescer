@@ -86,6 +86,35 @@ Nada disso é proteção: quem impede o acesso ao painel é o backend, que recus
 | V-3 | médio | **nenhuma imagem carregava**, sem erro visível e com `naturalWidth = 0` | as fotos passaram a ser servidas pelo domínio do próprio frontend, por rewrite |
 | V-6 | médio | falha de infraestrutura aparecia na tela como **"E-mail ou senha incorretos"**. Um `403` de CORS levava a vendedora a concluir que errou a senha, tentar de novo e trocar a senha, sem nunca entrar | só `401` e `404` recebem a mensagem genérica, que existe para não revelar se a conta existe. Qualquer outro status diz que é falha do sistema e mostra o código |
 
+### Achados da varredura de 20/08/2026
+
+Oito defeitos, encontrados abrindo a loja no navegador em 1440px e em 390px e forçando endereços que um visitante alcança por link antigo ou por histórico.
+
+| id | sev | o que era | correção |
+|---|---|---|---|
+| V-7 | médio | **a barra de rolagem sumia ao abrir os filtros no computador**, e a página inteira pulava 7px para o lado. A trava de rolagem existe para a gaveta do celular, e era aplicada em qualquer largura; no computador o painel é embutido e não cobre nada. Medido em 1440px: barra de 15px com o painel fechado, 0 com ele aberto; o título saiu de 89px para 96px da borda | a trava passou a valer só abaixo de `lg`, pela mesma consulta de mídia que decide qual dos dois painéis aparece, e acompanha o redimensionamento em vez de ser lida uma vez |
+| V-8 | médio | a gaveta se declarava `aria-modal="true"`, o que faz o leitor de tela esconder o resto da página, mas **o foco continuava no botão de fora e o Tab passeava pelos 31 elementos da vitrine atrás** (contados no navegador). A pessoa navegava por links que, para o leitor dela, não existiam mais | o foco entra na gaveta ao abrir, o Tab dá a volta dentro dela, e ao fechar volta para o botão que a abriu |
+| V-9 | médio | **`?page=999` mostrava "Nenhuma planta com esses filtros. Tente afrouxar um deles" sem filtro nenhum aplicado**, com doze plantas no catálogo: pedia uma ação impossível numa tela onde não sobrava nada para ler, e não oferecia caminho de volta | `lib/vitrine.ts` separa os três motivos de estar vazio (filtro, página além do fim, loja sem plantas), cada um com o seu texto e com botão para a vitrine |
+| V-10 | médio | **o título da planta duplicava a marca**: "Antúrio \| Florescer \| Florescer" na aba, no resultado do Google e na prévia do link no WhatsApp. O `template` do layout já acrescenta a marca, e a página acrescentava de novo | a página passa só o nome |
+| V-11 | baixo | **`?maxPrice=abc` anunciava o chip "Até R$ abc"** enquanto a API ignorava o parâmetro: a barra dizia estar filtrando o que não estava filtrado, e o chip oferecia remover um filtro inexistente | leitura única em `tetoDePreco`, que recusa o que não é preço |
+| V-12 | baixo | pelo mesmo `Number('abc')`, o controle de faixa anunciava **`aria-valuetext="Até R$ NaN"`** a quem usa leitor de tela. O texto visível escapava; o acessível, não | mesma correção do V-11 |
+| V-13 | baixo | o chip dizia "Até R$ 60" e o painel logo abaixo, "Até R$ 60,00": dois jeitos de escrever o mesmo número, um ao lado do outro | os dois usam `precoEmReal` |
+| V-14 | baixo | `aria-controls` do botão apontava, com o painel fechado, para um id que não existia na página | o atributo só é escrito quando há painel |
+| V-15 | baixo | a aba de um endereço inexistente dizia "Florescer \| Plantas", igual à de uma página que existe | a 404 tem título próprio |
+
+Verificado e sem defeito, para ninguém reinvestigar: nenhum id repetido, nenhuma imagem sem `alt`, nenhum botão ou link sem nome acessível, nenhum `target="_blank"` sem `noopener`, nenhum campo de formulário sem rótulo, nenhum conteúdo estourando a largura em 390px, e o cartão inteiro clicável (o `::after` cobre a `article`, então o toque na foto abre o detalhe).
+
+### Cabeçalhos de segurança
+
+A loja já mandava `nosniff`, `X-Frame-Options: DENY` e `Referrer-Policy`. Faltavam três, e o primeiro importa mais aqui do que pareceria:
+
+- **`Content-Security-Policy`**: o token da vendedora fica no `sessionStorage`, ao alcance de qualquer JavaScript que rode na página (V-1). O `connect-src 'self'` e o `img-src` sem host externo fecham as duas saídas por onde um script hostil mandaria esse token para fora. O limite conhecido está escrito no `next.config.ts`: o `script-src` precisa de `'unsafe-inline'` porque o Next injeta os scripts embutidos da hidratação, então a política **não impede o script de rodar, impede o resultado dele de sair**. Resolver de verdade exige nonce por requisição, e isso significa middleware em toda rota;
+- **`Permissions-Policy`**: câmera, microfone, localização e pagamento desligados, porque a loja não usa nenhum deles;
+- **`X-Powered-By` removido**: entregava de graça qual pilha procurar num boletim de vulnerabilidade.
+
+Continua faltando **HSTS**, e ele depende de HTTPS, que ainda não existe: o site é servido em HTTP atrás do túnel.
+
+
 A causa não é a aparente. O Next 16 **recusa otimizar imagem cujo host resolve para IP privado**, como proteção contra SSRF, e a única pista está no log do servidor:
 
 ```
