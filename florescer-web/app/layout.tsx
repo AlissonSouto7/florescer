@@ -68,61 +68,98 @@ function Cabecalho() {
   );
 }
 
+/**
+ * O rodapé.
+ *
+ * Fundo escuro, e não a mesma folha branca do resto: é ele que fecha a página.
+ * Sem essa mudança de tom, o conteúdo simplesmente termina, e o site parece
+ * cortado. O verde profundo também é o único lugar da loja onde a cor da marca
+ * aparece por inteiro, já que o miolo é claro de propósito, para a foto da
+ * planta ser a única cor forte da tela.
+ *
+ * **Nenhum link para a área da vendedora**, em lugar nenhum do site. Quem
+ * cadastra é uma pessoa só, que salva o endereço nos favoritos. Para todo o
+ * resto do mundo, aquele caminho não existe, e anunciá-lo só faria a loja
+ * parecer um sistema com uma porta de serviço à vista.
+ */
 function Rodape() {
   const ano = new Date().getFullYear();
 
   return (
-    <footer className="mt-16 border-t border-stone-200 bg-white">
-      <div className="mx-auto max-w-7xl px-4 py-10">
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="sm:col-span-2">
-            <p className="text-lg font-bold text-emerald-800">Florescer</p>
-            <p className="mt-2 max-w-sm text-sm leading-relaxed text-stone-600">
-              Plantas cultivadas em casa, escolhidas uma a uma. Cada planta vem com o
-              tamanho, a luz que aguenta e os cuidados que precisa, para você acertar
+    <footer className="mt-20 bg-emerald-950 text-emerald-50">
+      <div className="mx-auto max-w-7xl px-6 py-14">
+        <div className="grid gap-10 md:grid-cols-12">
+          <div className="md:col-span-5">
+            <div className="flex items-center gap-2">
+              <svg viewBox="0 0 24 24" className="h-7 w-7 text-emerald-300" fill="currentColor" aria-hidden="true">
+                <path d="M12 21c-.4-3.6.6-6.4 3-8.4 2.4-2 5.4-2.6 9-1.6-.4 3.6-1.8 6.2-4.2 7.8-2.4 1.6-5.1 2-7.8 2.2Z" opacity=".55" />
+                <path d="M11 21C7.9 20.7 5.5 19.4 4 17 2.4 14.6 1.9 11.3 2.4 7c3.6.6 6.3 2 8.1 4.2 1.8 2.2 2.6 5.4 2.5 9.8H11Z" />
+              </svg>
+              <span className="text-xl font-bold tracking-tight">Florescer</span>
+            </div>
+
+            <p className="mt-4 max-w-sm leading-relaxed text-emerald-100/80">
+              Plantas cultivadas em casa, escolhidas uma a uma. Cada uma vem com o
+              tamanho, a luz que aguenta e os cuidados que pede, para você acertar
               antes de levar.
             </p>
           </div>
 
-          <div>
-            <h2 className="text-sm font-semibold text-stone-900">A loja</h2>
-            <ul className="mt-3 space-y-2 text-sm">
-              <li>
-                <Link href="/" className="text-stone-600 transition hover:text-emerald-700">
-                  Todas as plantas
-                </Link>
-              </li>
-              <li>
-                <Link href="/?petSafe=true" className="text-stone-600 transition hover:text-emerald-700">
-                  Seguras para pets
-                </Link>
-              </li>
-              <li>
-                <Link href="/?difficulty=FACIL" className="text-stone-600 transition hover:text-emerald-700">
-                  Fáceis de cuidar
-                </Link>
-              </li>
+          <nav className="md:col-span-3" aria-labelledby="rodape-loja">
+            <h2 id="rodape-loja" className="text-sm font-semibold uppercase tracking-wider text-emerald-300">
+              Escolha por
+            </h2>
+            <ul className="mt-4 space-y-3 text-emerald-100/80">
+              <li><LinkDoRodape href="/">Todas as plantas</LinkDoRodape></li>
+              <li><LinkDoRodape href="/?petSafe=true">Seguras para pets</LinkDoRodape></li>
+              <li><LinkDoRodape href="/?difficulty=FACIL">Fáceis de cuidar</LinkDoRodape></li>
+              <li><LinkDoRodape href="/?environment=INTERNO">Para dentro de casa</LinkDoRodape></li>
             </ul>
-          </div>
+          </nav>
 
-          <div>
-            <h2 className="text-sm font-semibold text-stone-900">Como comprar</h2>
-            <p className="mt-3 text-sm leading-relaxed text-stone-600">
-              Escolha a planta, clique em comprar e a conversa segue pelo WhatsApp,
-              já com o nome e o preço na mensagem.
-            </p>
+          <div className="md:col-span-4">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-emerald-300">
+              Como funciona
+            </h2>
+
+            <ol className="mt-4 space-y-3 text-emerald-100/80">
+              <PassoDaCompra numero={1}>Escolha a planta pela foto e pelos cuidados.</PassoDaCompra>
+              <PassoDaCompra numero={2}>Clique em comprar.</PassoDaCompra>
+              <PassoDaCompra numero={3}>A conversa segue no WhatsApp, com o nome e o preço já na mensagem.</PassoDaCompra>
+            </ol>
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col gap-2 border-t border-stone-200 pt-6 text-sm text-stone-500 sm:flex-row sm:items-center sm:justify-between">
-          <p>&copy; {ano} Florescer. Todos os direitos reservados.</p>
-          {/* O acesso ao painel fica aqui, discreto: quem vende sabe onde
-              procurar, e quem veio comprar não tropeça nele. */}
-          <Link href="/login" className="text-stone-400 transition hover:text-stone-700">
-            Área da vendedora
-          </Link>
+        <div className="mt-12 border-t border-emerald-800/60 pt-6 text-sm text-emerald-200/70">
+          <p>&copy; {ano} Florescer. Plantas cultivadas e entregues com cuidado.</p>
         </div>
       </div>
     </footer>
+  );
+}
+
+function LinkDoRodape({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="transition hover:text-white focus:outline-none focus-visible:underline focus-visible:decoration-emerald-300"
+    >
+      {children}
+    </Link>
+  );
+}
+
+function PassoDaCompra({ numero, children }: { numero: number; children: React.ReactNode }) {
+  return (
+    <li className="flex gap-3">
+      <span
+        aria-hidden="true"
+        className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full
+                   bg-emerald-800 text-xs font-semibold text-emerald-100"
+      >
+        {numero}
+      </span>
+      <span className="leading-relaxed">{children}</span>
+    </li>
   );
 }
