@@ -106,7 +106,9 @@ docker compose up --build
 | API de identidade | http://localhost:8080/swagger |
 | API de catálogo | http://localhost:8081/swagger |
 
-Para o botão de WhatsApp aparecer, preencha `WHATSAPP_NUMBER` no `.env` (só dígitos, com país e DDD).
+O número de WhatsApp, a cidade de entrega, o Instagram e o horário de atendimento são editados pela
+própria vendedora em `/admin/configuracoes`, e ficam no banco. Enquanto o número não estiver
+preenchido, o botão de comprar não aparece, de propósito: um `wa.me` sem número abre uma página de erro.
 
 Sem as chaves configuradas a aplicação não sobe. Isso é intencional: um valor padrão faria o sistema assinar tokens com uma chave conhecida por qualquer pessoa que leia o repositório.
 
