@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback } from 'react';
 
 import { AMBIENTE, DIFICULDADE, LUMINOSIDADE } from '@/lib/rotulos';
+import { Select } from './Select';
 
 /**
  * Filtros da vitrine.
@@ -100,18 +101,17 @@ export function Filtros() {
       </Grupo>
 
       <Grupo titulo="Até quanto quer gastar">
-        <select
+        <Select
+          aria-label="Preço máximo"
           value={params.get('maxPrice') ?? ''}
           onChange={(e) => aplicar('maxPrice', e.target.value || null)}
-          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm
-                     focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         >
           <option value="">Qualquer preço</option>
           <option value="30">Até R$ 30</option>
           <option value="50">Até R$ 50</option>
           <option value="100">Até R$ 100</option>
           <option value="200">Até R$ 200</option>
-        </select>
+        </Select>
       </Grupo>
     </aside>
   );
