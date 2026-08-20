@@ -40,21 +40,36 @@ jobs:
             echo "tag=dev" >> "$GITHUB_OUTPUT"
           fi
 
-  publish:
-    name: publish ${{ matrix.service }} to ${{ needs.resolve.outputs.environment }}
+  # Cada arquitetura é construída no seu próprio processador, e não sob
+  # emulação. A imagem sai daqui sem tag, identificada só pelo digest; quem
+  # junta as duas numa tag só é o job `manifest`, logo abaixo.
+  #
+  # O motivo é custo medido: com QEMU no runner x86, o build ARM do frontend
+  # passou de uma hora e precisou ser cancelado, contra 42s do mesmo build
+  # nativo. Emular `npm ci` e `next build` instrução a instrução inviabiliza o
+  # pipeline.
+  build:
+    name: build ${{ matrix.service }} (${{ matrix.plataforma.nome }})
     needs: resolve
-    runs-on: ubuntu-latest
-    # O environment é o gate: production tem required reviewer configurado no GitHub,
-    # então este job fica parado esperando aprovação humana antes de rodar.
+    runs-on: ${{ matrix.plataforma.runner }}
+    # O environment é o gate: production tem required reviewer configurado no
+    # GitHub, então este job fica parado esperando aprovação humana.
     environment: ${{ needs.resolve.outputs.environment }}
     permissions:
       contents: read
       packages: write
-      # Publica o resultado do scan da imagem na aba Security.
-      security-events: write
     strategy:
+      fail-fast: false
       matrix:
         service: [auth-service, product-service, florescer-web]
+        plataforma:
+          - nome: amd64
+            runner: ubuntu-latest
+            docker: linux/amd64
+          - nome: arm64
+            # Gratuito em repositório público, que é o caso deste.
+            runner: ubuntu-24.04-arm
+            docker: linux/arm64
 
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -66,26 +81,97 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Emulação para construir a imagem ARM num runner x86. Sem ela, o build
-      # multiplataforma falha no primeiro comando que rodar dentro do estágio
-      # ARM, com um "exec format error" que não diz de onde veio.
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
-
       - name: Set up Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       # Nome de imagem Docker precisa ser minúsculo, e o dono do repositório no
-      # GitHub pode ter maiúsculas. Resolvido uma vez e reusado nos passos
-      # seguintes, para o scan apontar exatamente para a imagem publicada.
+      # GitHub pode ter maiúsculas.
       - name: Resolve image name
         id: image
         env:
           REPOSITORY: ${{ github.repository }}
         run: echo "name=${REGISTRY}/${REPOSITORY,,}/${{ matrix.service }}" >> "$GITHUB_OUTPUT"
 
-      # Gera as tags e os labels OCI padrão, que gravam na própria imagem de
-      # qual commit e de qual repositório ela veio.
+      # Só os labels OCI aqui: a tag é aplicada no manifesto final. Publicar a
+      # mesma tag de dois jobs faria o segundo sobrescrever o primeiro, e a
+      # imagem ficaria com uma arquitetura só, sem nada indicar isso.
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ${{ steps.image.outputs.name }}
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: ${{ matrix.service }}
+          platforms: ${{ matrix.plataforma.docker }}
+          labels: ${{ steps.meta.outputs.labels }}
+          outputs: type=image,name=${{ steps.image.outputs.name }},push-by-digest=true,name-canonical=true,push=true
+          # Cache por arquitetura: as camadas de uma não servem para a outra, e
+          # sem escopo separado uma sobrescreve a da outra a cada execução.
+          cache-from: type=gha,scope=${{ matrix.service }}-${{ matrix.plataforma.nome }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}-${{ matrix.plataforma.nome }}
+
+      # O digest vai para o job seguinte por artefato, porque saída de matriz no
+      # GitHub Actions é sobrescrita entre as execuções paralelas.
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          touch "/tmp/digests/${DIGEST#sha256:}"
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+
+      - name: Upload digest
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: digest-${{ matrix.service }}-${{ matrix.plataforma.nome }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  # Junta as duas arquiteturas numa tag só. Sem este passo, o registro tem duas
+  # imagens soltas por digest e nenhuma tag utilizável.
+  publish:
+    name: publish ${{ matrix.service }} to ${{ needs.resolve.outputs.environment }}
+    needs: [resolve, build]
+    runs-on: ubuntu-latest
+    environment: ${{ needs.resolve.outputs.environment }}
+    permissions:
+      contents: read
+      packages: write
+      # Publica o resultado do scan da imagem na aba Security.
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [auth-service, product-service, florescer-web]
+
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Download digests
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: digest-${{ matrix.service }}-*
+          merge-multiple: true
+          path: /tmp/digests
+
+      - name: Resolve image name
+        id: image
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: echo "name=${REGISTRY}/${REPOSITORY,,}/${{ matrix.service }}" >> "$GITHUB_OUTPUT"
+
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
@@ -95,20 +181,23 @@ jobs:
             type=raw,value=${{ needs.resolve.outputs.tag }}
             type=sha,format=long
 
-      - name: Build and push
-        id: build
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
-        with:
-          context: ${{ matrix.service }}
-          # amd64 para servidor comum, arm64 porque as máquinas gratuitas de
-          # nuvem costumam ser ARM. Sem a segunda, a imagem não roda lá, e o erro
-          # só aparece no destino, depois do deploy.
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      # `imagetools create` monta um índice apontando para os dois digests, e é
+      # ele que recebe as tags. Quem puxar a imagem recebe a arquitetura da
+      # própria máquina, sem precisar saber que existem duas.
+      - name: Create multi-arch manifest
+        working-directory: /tmp/digests
+        env:
+          IMAGEM: ${{ steps.image.outputs.name }}
+        run: |
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf "${IMAGEM}@sha256:%s " *)
+
+      - name: Show what was published
+        env:
+          IMAGEM: ${{ steps.image.outputs.name }}
+          TAG: ${{ needs.resolve.outputs.tag }}
+        run: docker buildx imagetools inspect "${IMAGEM}:${TAG}"
 
       # A imagem carrega mais do que o nosso código: distribuição base, JRE e
       # bibliotecas de sistema. O Dependabot não enxerga essa camada.
@@ -116,9 +205,7 @@ jobs:
         id: scan
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          # Escaneia pelo digest, que aponta para o binário exato que acabou de
-          # ser publicado, e não para uma tag que pode ser movida depois.
-          image-ref: ${{ steps.image.outputs.name }}@${{ steps.build.outputs.digest }}
+          image-ref: ${{ steps.image.outputs.name }}:${{ needs.resolve.outputs.tag }}
           format: sarif
           output: trivy-${{ matrix.service }}.sarif
           severity: HIGH,CRITICAL

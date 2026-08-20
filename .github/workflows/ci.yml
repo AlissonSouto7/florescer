@@ -99,37 +99,52 @@ jobs:
 
   # O CI não construía imagem, e por isso um Dockerfile quebrado só era
   # descoberto pelo CD, depois do merge, com a develop já vermelha. Foi o que
-  # aconteceu com a base Alpine do Temurin, que não existe para ARM: o CI passou
-  # verde, o merge entrou, e o CD falhou em seguida.
+  # aconteceu com a base Alpine do Temurin, que não existe para ARM.
   #
   # Aqui a imagem é construída para as duas arquiteturas e **não é publicada**.
   # Publicar é papel do CD, a partir da branch que alimenta cada ambiente.
+  #
+  # Cada arquitetura roda no seu próprio processador, e não sob emulação. A
+  # primeira versão usava QEMU no runner x86 para produzir a imagem ARM, e o
+  # custo foi medido: o build do frontend passou de uma hora e precisou ser
+  # cancelado, contra 42s do mesmo build nativo. Emular um `npm ci` e um
+  # `next build` instrução a instrução é lento a ponto de inviabilizar o gate.
+  #
+  # Os runners `ubuntu-24.04-arm` são gratuitos em repositório público, que é o
+  # caso deste. Em repositório privado o label não funciona, e aí a saída seria
+  # voltar ao QEMU só no CD.
   image:
-    name: image (${{ matrix.service }})
-    runs-on: ubuntu-latest
+    name: image (${{ matrix.service }}, ${{ matrix.plataforma.nome }})
+    runs-on: ${{ matrix.plataforma.runner }}
     strategy:
       fail-fast: false
       matrix:
         service: [auth-service, product-service, florescer-web]
+        plataforma:
+          - nome: amd64
+            runner: ubuntu-latest
+            docker: linux/amd64
+          - nome: arm64
+            runner: ubuntu-24.04-arm
+            docker: linux/arm64
 
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
-
       - name: Set up Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
-      - name: Build for both architectures
+      - name: Build
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: ${{ matrix.service }}
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.plataforma.docker }}
           # Sem push: aqui o objetivo é saber se constrói, não publicar.
           push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # Cache por arquitetura: as camadas de uma não servem para a outra, e
+          # sem a chave separada uma sobrescreve a da outra a cada execução.
+          cache-from: type=gha,scope=${{ matrix.service }}-${{ matrix.plataforma.nome }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}-${{ matrix.plataforma.nome }}
 
   secret-scan:
     name: secret scan
