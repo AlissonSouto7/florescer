@@ -26,9 +26,9 @@ COPY . .
 # dos rewrites durante o build. Passar só no `environment` do container não tem
 # efeito nenhum, e a falha é silenciosa.
 #
-# O número do WhatsApp NÃO está aqui de propósito: ele é lido em runtime, num
-# componente de servidor, então trocar de número é mexer no ambiente do
-# container, sem reconstruir imagem.
+# O número do WhatsApp NÃO está aqui, nem no ambiente do container: ele é um
+# dado da loja, guardado no banco e editado pela vendedora em
+# /admin/configuracoes. A mesma imagem serve qualquer loja.
 ARG PRODUCT_API=http://product-service:8081
 ARG AUTH_API=http://auth-service:8080
 ENV PRODUCT_API=$PRODUCT_API \
