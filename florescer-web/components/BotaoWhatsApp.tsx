@@ -1,5 +1,5 @@
 import type { Planta } from '@/lib/api';
-import { linkDeCompra, numeroDaLoja } from '@/lib/whatsapp';
+import { linkDeCompra, temNumero } from '@/lib/whatsapp';
 import { IconeWhatsApp } from './IconeWhatsApp';
 
 /**
@@ -9,17 +9,20 @@ import { IconeWhatsApp } from './IconeWhatsApp';
  * começa do zero: qual planta, qual preço, ainda tem. Com ela, a primeira
  * mensagem já diz tudo isso.
  *
- * O número vem de configuração, nunca do código: é um número pessoal, e
- * repositório público é lugar onde ninguém deveria encontrá-lo. Este é um
- * componente de servidor, então a leitura acontece a cada renderização, e
- * trocar de número é mexer no ambiente do container, sem reconstruir a imagem.
+ * O número vem de quem renderiza, que o leu dos dados da loja. Não fica no
+ * código nem em variável de ambiente: é um número pessoal, e trocá-lo precisa
+ * ser algo que a vendedora faz pela tela, sem depender de ninguém.
+ *
+ * Sem número, o botão some. Um link para `wa.me/` sem número abre uma página de
+ * erro do WhatsApp, o que é pior que não ter botão nenhum.
  */
-export function BotaoWhatsApp({ planta }: { planta: Planta }) {
-  // Sem número configurado, o botão não aparece. Um link para wa.me sem número
-  // abre uma página de erro do WhatsApp, o que é pior que não ter botão.
-  if (!numeroDaLoja()) return null;
+export function BotaoWhatsApp({ planta, numero }: { planta: Planta; numero: string | null }) {
+  // Sem número, o botão some e nada é dito. Os dois casos precisam ser
+  // distinguidos: dizer "indisponível" quando a loja é que está sem número
+  // seria mentir sobre a planta, e a pessoa iria embora achando que acabou.
+  if (!temNumero(numero)) return null;
 
-  const link = linkDeCompra(planta);
+  const link = linkDeCompra(planta, numero);
 
   // Planta indisponível ou sem estoque não recebe botão: o pedido chegaria para
   // uma venda que a vendedora não pode atender.

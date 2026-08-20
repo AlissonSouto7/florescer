@@ -20,10 +20,10 @@ import { IconeWhatsApp } from './IconeWhatsApp';
  * cair no link errado. Por isso o cartão é uma `<article>` com dois links
  * dentro, e a foto e o nome é que levam ao detalhe.
  */
-export function CardPlanta({ planta }: { planta: Planta }) {
+export function CardPlanta({ planta, numero }: { planta: Planta; numero: string | null }) {
   const esgotada = !planta.availability || planta.quantityStock <= 0;
   const tamanho = altura(planta.heightCm);
-  const whatsapp = linkDeCompra(planta);
+  const whatsapp = linkDeCompra(planta, numero);
 
   return (
     <article

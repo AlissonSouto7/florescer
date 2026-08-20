@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { CardPlanta } from '@/components/CardPlanta';
 import { Filtros } from '@/components/Filtros';
 import { listarPlantas, type Filtros as TipoFiltros } from '@/lib/api';
+import { LOJA_VAZIA, buscarDadosDaLoja } from '@/lib/loja';
 
 export const metadata = {
   title: 'Florescer | Plantas',
@@ -24,6 +25,7 @@ export default async function Vitrine({ searchParams }: { searchParams: Promise<
 
   let pagina;
   let faixa = { minimo: 0, maximo: 200 };
+  let loja = LOJA_VAZIA;
   let erro: string | null = null;
 
   try {
@@ -38,11 +40,13 @@ export default async function Vitrine({ searchParams }: { searchParams: Promise<
      * extremos encolheriam junto com o resultado, e arrastar o controle mudaria
      * a própria régua debaixo da mão de quem arrasta.
      */
-    const [resultado, catalogo] = await Promise.all([
+    const [resultado, catalogo, dadosDaLoja] = await Promise.all([
       listarPlantas(filtros),
       listarPlantas({ size: 50 }),
+      buscarDadosDaLoja(),
     ]);
     pagina = resultado;
+    loja = dadosDaLoja;
 
     const precos = catalogo.content.map((p) => p.price);
     if (precos.length > 0) {
@@ -99,7 +103,7 @@ export default async function Vitrine({ searchParams }: { searchParams: Promise<
 
               <div className="grid grid-cols-2 gap-4 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
                 {pagina.content.map((planta) => (
-                  <CardPlanta key={planta.id} planta={planta} />
+                  <CardPlanta key={planta.id} planta={planta} numero={loja.whatsappNumber} />
                 ))}
               </div>
 
