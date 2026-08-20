@@ -54,6 +54,10 @@ const nextConfig: NextConfig = {
       { source: '/api/product/:caminho*', destination: `${PRODUTOS}/v1/product/:caminho*` },
       { source: '/api/auth/:caminho*', destination: `${AUTENTICACAO}/v1/auth/:caminho*` },
 
+      // Os dados da loja: leitura pública, escrita só com token de ADMIN, o que
+      // quem decide é o backend.
+      { source: '/api/settings', destination: `${PRODUTOS}/v1/settings` },
+
       // As fotos das plantas.
       { source: '/uploads/:caminho*', destination: `${PRODUTOS}/uploads/:caminho*` },
     ];

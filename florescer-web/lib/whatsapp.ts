@@ -11,9 +11,15 @@ import { precoEmReal } from './rotulos';
  * um texto sem preço, ou com o acento corrompido, e ninguém perceberia.
  */
 
-/** O número da loja, ou vazio quando não há número configurado. */
-export function numeroDaLoja(): string {
-  return process.env.WHATSAPP_NUMBER ?? '';
+/**
+ * O número da loja.
+ *
+ * Vem por parâmetro, e não mais de variável de ambiente: quem manda agora é o
+ * que a vendedora salvou na tela de dados da loja. A variável obrigava a editar
+ * arquivo e reiniciar container para trocar de número, o que ela não faz.
+ */
+export function temNumero(numero: string | null | undefined): boolean {
+  return Boolean(numero && numero.trim());
 }
 
 /** Se a planta pode ser vendida agora. */
@@ -29,9 +35,8 @@ export function podeComprar(planta: Planta): boolean {
  * pior que não ter botão; e planta esgotada geraria um pedido que a vendedora
  * não pode atender.
  */
-export function linkDeCompra(planta: Planta): string | null {
-  const numero = numeroDaLoja();
-  if (!numero || !podeComprar(planta)) return null;
+export function linkDeCompra(planta: Planta, numero: string | null | undefined): string | null {
+  if (!temNumero(numero) || !podeComprar(planta)) return null;
 
   const mensagem = `Olá! Tenho interesse na ${planta.name} (${precoEmReal(planta.price)}) que vi no site.`;
 

@@ -25,6 +25,16 @@ const PRODUTOS_INTERNO = process.env.PRODUCT_API ?? 'http://localhost:8081';
 const produtos = () =>
   typeof window === 'undefined' ? `${PRODUTOS_INTERNO}/v1/product` : '/api/product';
 
+/**
+ * Onde ficam os dados da loja, vistos de quem está chamando.
+ *
+ * Mesma regra do catálogo: do servidor, direto no serviço; do navegador, pelo
+ * domínio do site. O caminho é montado aqui, e não concatenado por quem usa,
+ * para não existirem duas versões dele espalhadas.
+ */
+export const configuracoes = () =>
+  typeof window === 'undefined' ? `${PRODUTOS_INTERNO}/v1/settings` : '/api/settings';
+
 /** O login só acontece no navegador, então sempre passa pelo proxy. */
 const AUTENTICACAO = '/api/auth';
 

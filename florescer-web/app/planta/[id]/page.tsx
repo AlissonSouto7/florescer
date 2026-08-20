@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { BotaoWhatsApp } from '@/components/BotaoWhatsApp';
 import { DadosEstruturados } from '@/components/DadosEstruturados';
 import { buscarPlanta } from '@/lib/api';
+import { buscarDadosDaLoja } from '@/lib/loja';
 import {
   AMBIENTE,
   DIFICULDADE,
@@ -46,7 +47,7 @@ export async function generateMetadata({ params }: Props) {
 /** A página que decide a compra: tudo o que a pessoa perguntaria, junto. */
 export default async function DetalheDaPlanta({ params }: Props) {
   const { id } = await params;
-  const planta = await buscarPlanta(id);
+  const [planta, loja] = await Promise.all([buscarPlanta(id), buscarDadosDaLoja()]);
 
   if (!planta) notFound();
 
@@ -123,7 +124,7 @@ export default async function DetalheDaPlanta({ params }: Props) {
           )}
 
           <div className="mt-8">
-            <BotaoWhatsApp planta={planta} />
+            <BotaoWhatsApp planta={planta} numero={loja.whatsappNumber} />
           </div>
         </div>
       </div>

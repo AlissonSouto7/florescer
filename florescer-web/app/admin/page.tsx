@@ -94,12 +94,24 @@ export default function Painel() {
           <h1 className="text-2xl font-bold text-stone-900">Minhas plantas</h1>
           <p className="text-sm text-stone-600">{plantas.length} cadastradas</p>
         </div>
-        <Link
-          href="/admin/nova"
-          className="rounded-lg bg-emerald-600 px-4 py-2.5 font-medium text-white hover:bg-emerald-700"
-        >
-          Cadastrar planta
-        </Link>
+        <div className="flex items-center gap-2">
+          {/* Discreto ao lado da ação principal: mexer nos dados da loja é raro,
+              cadastrar planta é o que ela faz toda semana. */}
+          <Link
+            href="/admin/configuracoes"
+            className="rounded-xl border border-stone-300 px-4 py-2.5 text-sm font-medium text-stone-700
+                       transition hover:border-stone-400 hover:bg-stone-50"
+          >
+            Dados da loja
+          </Link>
+
+          <Link
+            href="/admin/nova"
+            className="rounded-xl bg-emerald-600 px-4 py-2.5 font-medium text-white transition hover:bg-emerald-700"
+          >
+            Cadastrar planta
+          </Link>
+        </div>
       </div>
 
       {erro && (

@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import type { Planta } from '@/lib/api';
 import { PLANTA } from '@/test/fixtures';
@@ -25,19 +25,11 @@ import { BotaoWhatsApp } from './BotaoWhatsApp';
 
 const NUMERO = '5511999999999';
 
-/**
- * Renderiza com o número que o caso precisa.
- *
- * O componente lê a variável a cada renderização, e não uma vez quando o módulo
- * carrega. É isso que permite trocar o número no ambiente do container sem
- * reconstruir a imagem, e é o que este helper exercita: basta trocar a variável
- * antes de renderizar.
- */
+/** Renderiza com o número que o caso precisa. */
 // `null` e não `undefined` para o caso "sem número": undefined aciona o valor
 // padrão do parâmetro, e o teste passaria a exercitar o caso oposto.
 function montar(planta: Planta, numero: string | null = NUMERO) {
-  vi.stubEnv('WHATSAPP_NUMBER', numero ?? '');
-  return render(<BotaoWhatsApp planta={planta} />);
+  return render(<BotaoWhatsApp planta={planta} numero={numero} />);
 }
 
 /** O texto que a vendedora vai receber, já decodificado. */
@@ -45,14 +37,6 @@ function mensagemDoLink(): string {
   const link = screen.getByRole('link') as HTMLAnchorElement;
   return new URL(link.href).searchParams.get('text') ?? '';
 }
-
-beforeEach(() => {
-  vi.stubEnv('WHATSAPP_NUMBER', NUMERO);
-});
-
-afterEach(() => {
-  vi.unstubAllEnvs();
-});
 
 describe('planta disponível', () => {
   it('aponta para o número configurado', () => {

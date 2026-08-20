@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { MenuDaVendedora } from '@/components/MenuDaVendedora';
+import { buscarDadosDaLoja, linkDoInstagram, type DadosDaLoja } from '@/lib/loja';
 import { enderecoDoSite } from '@/lib/site';
 
 import './globals.css';
@@ -28,7 +29,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: LayoutProps<'/'>) {
+export default async function RootLayout({ children }: LayoutProps<'/'>) {
+  // O rodapé mostra o que a vendedora configurou. Buscar aqui, e não dentro do
+  // rodapé, deixa a chamada acontecer uma vez por página em vez de uma por
+  // componente.
+  const loja = await buscarDadosDaLoja();
+
   // lang="pt-BR" não é detalhe: o leitor de tela usa isso para escolher a
   // pronúncia, e o navegador para oferecer tradução.
   return (
@@ -36,7 +42,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       <body className="flex min-h-full flex-col bg-stone-50 text-stone-900">
         <Cabecalho />
         <div className="flex-1">{children}</div>
-        <Rodape />
+        <Rodape loja={loja} />
       </body>
     </html>
   );
@@ -82,8 +88,10 @@ function Cabecalho() {
  * resto do mundo, aquele caminho não existe, e anunciá-lo só faria a loja
  * parecer um sistema com uma porta de serviço à vista.
  */
-function Rodape() {
+function Rodape({ loja }: { loja: DadosDaLoja }) {
   const ano = new Date().getFullYear();
+  const instagram = linkDoInstagram(loja.instagramHandle);
+  const temContato = Boolean(loja.deliveryCity || instagram || loja.openingHours);
 
   return (
     <footer className="mt-20 bg-emerald-950 text-emerald-50">
@@ -119,14 +127,39 @@ function Rodape() {
 
           <div className="md:col-span-4">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-emerald-300">
-              Como funciona
+              {temContato ? 'Atendimento' : 'Como funciona'}
             </h2>
 
-            <ol className="mt-4 space-y-3 text-emerald-100/80">
-              <PassoDaCompra numero={1}>Escolha a planta pela foto e pelos cuidados.</PassoDaCompra>
-              <PassoDaCompra numero={2}>Clique em comprar.</PassoDaCompra>
-              <PassoDaCompra numero={3}>A conversa segue no WhatsApp, com o nome e o preço já na mensagem.</PassoDaCompra>
-            </ol>
+            {/* Cada linha só aparece se a vendedora preencheu. Rótulo sem valor
+                ao lado é pior que a ausência da linha inteira. */}
+            {temContato ? (
+              <ul className="mt-4 space-y-3 text-emerald-100/80">
+                {loja.deliveryCity && (
+                  <LinhaDeContato rotulo="Entrega em">{loja.deliveryCity}</LinhaDeContato>
+                )}
+                {loja.openingHours && (
+                  <LinhaDeContato rotulo="Atende">{loja.openingHours}</LinhaDeContato>
+                )}
+                {instagram && loja.instagramHandle && (
+                  <LinhaDeContato rotulo="Instagram">
+                    <a
+                      href={instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline decoration-emerald-400/60 underline-offset-2 transition hover:text-white"
+                    >
+                      @{loja.instagramHandle}
+                    </a>
+                  </LinhaDeContato>
+                )}
+              </ul>
+            ) : (
+              <ol className="mt-4 space-y-3 text-emerald-100/80">
+                <PassoDaCompra numero={1}>Escolha a planta pela foto e pelos cuidados.</PassoDaCompra>
+                <PassoDaCompra numero={2}>Clique em comprar.</PassoDaCompra>
+                <PassoDaCompra numero={3}>A conversa segue no WhatsApp, com o nome e o preço já na mensagem.</PassoDaCompra>
+              </ol>
+            )}
           </div>
         </div>
 
@@ -146,6 +179,15 @@ function LinkDoRodape({ href, children }: { href: string; children: React.ReactN
     >
       {children}
     </Link>
+  );
+}
+
+function LinhaDeContato({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
+  return (
+    <li>
+      <span className="block text-xs uppercase tracking-wide text-emerald-300/80">{rotulo}</span>
+      <span className="leading-relaxed">{children}</span>
+    </li>
   );
 }
 

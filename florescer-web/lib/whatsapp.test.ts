@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { PLANTA } from '@/test/fixtures';
-import { linkDeCompra, numeroDaLoja, podeComprar } from './whatsapp';
+import { linkDeCompra, podeComprar, temNumero } from './whatsapp';
 
 /**
  * O que estes testes protegem
@@ -20,27 +20,23 @@ import { linkDeCompra, numeroDaLoja, podeComprar } from './whatsapp';
 
 const NUMERO = '5573998149668';
 
-beforeEach(() => {
-  vi.stubEnv('WHATSAPP_NUMBER', NUMERO);
-});
-
-afterEach(() => {
-  vi.unstubAllEnvs();
-});
-
 /** O texto que a vendedora vai receber, já decodificado. */
 function mensagemDe(link: string): string {
   return new URL(link).searchParams.get('text') ?? '';
 }
 
-describe('numeroDaLoja', () => {
-  it('devolve o número configurado', () => {
-    expect(numeroDaLoja()).toBe(NUMERO);
+describe('temNumero', () => {
+  it('reconhece um número configurado', () => {
+    expect(temNumero(NUMERO)).toBe(true);
   });
 
-  it('devolve vazio quando não há número', () => {
-    vi.stubEnv('WHATSAPP_NUMBER', '');
-    expect(numeroDaLoja()).toBe('');
+  it('não aceita vazio, espaço em branco, nulo nem ausente', () => {
+    // Os quatro chegam da API ou do formulário, e todos significam a mesma
+    // coisa: a loja ainda não tem número, e o botão precisa sumir.
+    expect(temNumero('')).toBe(false);
+    expect(temNumero('   ')).toBe(false);
+    expect(temNumero(null)).toBe(false);
+    expect(temNumero(undefined)).toBe(false);
   });
 });
 
@@ -66,19 +62,19 @@ describe('podeComprar', () => {
 
 describe('linkDeCompra', () => {
   it('aponta para o número da loja', () => {
-    const link = linkDeCompra(PLANTA)!;
+    const link = linkDeCompra(PLANTA, NUMERO)!;
     expect(new URL(link).hostname).toBe('wa.me');
     expect(new URL(link).pathname).toBe(`/${NUMERO}`);
   });
 
   it('já diz qual planta e por quanto', () => {
-    expect(mensagemDe(linkDeCompra(PLANTA)!)).toBe(
+    expect(mensagemDe(linkDeCompra(PLANTA, NUMERO)!)).toBe(
       'Olá! Tenho interesse na Espada de São Jorge (R$ 49,90) que vi no site.',
     );
   });
 
   it('não corrompe acento', () => {
-    const link = linkDeCompra({ ...PLANTA, name: 'Peperômia viçosa' })!;
+    const link = linkDeCompra({ ...PLANTA, name: 'Peperômia viçosa' }, NUMERO)!;
     expect(mensagemDe(link)).toContain('Peperômia viçosa');
     expect(link).toContain('vi%C3%A7osa');
   });
@@ -86,27 +82,27 @@ describe('linkDeCompra', () => {
   it('não deixa "&" no nome cortar a mensagem ao meio', () => {
     // Sem encodeURIComponent, o "&" viraria separador de parâmetro e tudo
     // depois dele sumiria da mensagem.
-    const link = linkDeCompra({ ...PLANTA, name: 'Costela & Jiboia' })!;
+    const link = linkDeCompra({ ...PLANTA, name: 'Costela & Jiboia' }, NUMERO)!;
     expect(mensagemDe(link)).toContain('Costela & Jiboia');
     expect(mensagemDe(link)).toContain('que vi no site.');
   });
 
   it('não deixa "#" truncar a URL', () => {
-    const link = linkDeCompra({ ...PLANTA, name: 'Cacto #7' })!;
+    const link = linkDeCompra({ ...PLANTA, name: 'Cacto #7' }, NUMERO)!;
     expect(mensagemDe(link)).toContain('Cacto #7');
   });
 
   it('devolve nulo para planta esgotada', () => {
-    expect(linkDeCompra({ ...PLANTA, quantityStock: 0 })).toBeNull();
+    expect(linkDeCompra({ ...PLANTA, quantityStock: 0 }, NUMERO)).toBeNull();
   });
 
-  it('devolve nulo quando não há número configurado', () => {
-    vi.stubEnv('WHATSAPP_NUMBER', '');
-    expect(linkDeCompra(PLANTA)).toBeNull();
+  it('devolve nulo quando a loja não tem número', () => {
+    expect(linkDeCompra(PLANTA, null)).toBeNull();
+    expect(linkDeCompra(PLANTA, '')).toBeNull();
   });
 
   it('escreve o preço como o Brasil escreve', () => {
-    const link = linkDeCompra({ ...PLANTA, price: 1234.5 })!;
+    const link = linkDeCompra({ ...PLANTA, price: 1234.5 }, NUMERO)!;
     expect(mensagemDe(link)).toContain('R$ 1.234,50');
   });
 });

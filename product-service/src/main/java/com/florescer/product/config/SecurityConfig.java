@@ -36,6 +36,11 @@ public class SecurityConfig {
                 // detalhe esta desligado no application.yml.
                 .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/v1/product", "/v1/product/{id}").permitAll()
+                // Os dados da loja (WhatsApp, cidade, horário) aparecem no
+                // rodapé e no botão de comprar da vitrine, que é aberta. Só a
+                // leitura: alterar continua exigindo ADMIN, pelo @PreAuthorize
+                // do controller.
+                .requestMatchers(HttpMethod.GET, "/v1/settings").permitAll()
                 // A vitrine é pública, então as imagens dos produtos também
                 // precisam ser. Sem isto a listagem responde 200 com URLs que
                 // devolvem 401, e nenhuma foto aparece para quem não entrou.
