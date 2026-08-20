@@ -149,7 +149,7 @@ Uma armadilha junto: o destino do rewrite é **congelado no build**, não lido e
 
 ## Testes
 
-249 testes em Vitest com Testing Library, rodando em jsdom. Medido em 20/08/2026: `lib/` com 100% de linhas e 92% de ramos, `components/` com 97,9% de linhas e 93,6% de ramos.
+274 testes em Vitest com Testing Library, rodando em jsdom. Medido em 20/08/2026: `lib/` com 100% de linhas e 92% de ramos, `components/` com 97,9% de linhas e 93,6% de ramos.
 
 ```bash
 cd florescer-web

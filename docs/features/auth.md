@@ -4,7 +4,7 @@ Registro, login e emissão dos tokens que o resto do sistema aceita.
 
 **Onde fica**: `auth-service`, porta 8080, MySQL 8.4.
 **Status**: funcional, coberto por testes, sem endpoint protegido próprio.
-**Última revisão**: 11/08/2026.
+**Última revisão**: 20/08/2026.
 
 ## Endpoints
 
@@ -14,7 +14,7 @@ Registro, login e emissão dos tokens que o resto do sistema aceita.
 | `POST` | `/v1/auth/login` | qualquer um | devolve o token de acesso |
 | `GET` | `/.well-known/jwks.json` | qualquer um | chave pública que valida os tokens |
 | `GET` | `/actuator/health` | qualquer um | UP ou DOWN, sem detalhe |
-| `GET` | `/swagger` | qualquer um | documentação interativa |
+| `GET` | `/swagger` | qualquer um | documentação interativa, **fora do ar por padrão** (`SWAGGER_ENABLED`) |
 
 Todas públicas. A regra padrão é `anyRequest().authenticated()`, para que um endpoint novo nasça fechado em vez de aberto por esquecimento.
 
@@ -126,7 +126,7 @@ Para ninguém reinvestigar:
 | `CorrelationIdTest` (5) | requisição sem rastro; identificador forjado no log; vazamento de contexto entre requisições |
 | `HealthEndpointTest` (12) | health inacessível ao orquestrador; Actuator expondo configuração interna |
 
-**62 testes, cobertura medida em 88% de linha e 67% de ramo** (11/08/2026).
+**80 testes, cobertura medida em 92% de linha e 77% de ramo** (20/08/2026).
 
 ### Prova de que os testes não são vacuosos
 
@@ -182,7 +182,7 @@ grep '"correlationId":"SEU-ID-AQUI"' /var/log/florescer/auth.log
 
 - `spring-security-test` está declarado no POM e não é usado por nenhum teste. A matriz autentica com token real, que é mais fiel. Remover a dependência é limpeza pendente.
 - Não há verificação de e-mail nem recuperação de senha.
-- Sem bloqueio de conta após N tentativas: o rate limit é por origem, não por conta.
+- O limite por origem só é confiável com um proxy de borda que escreva o `X-Forwarded-For` (A-18), e cada tentativa ainda custa um BCrypt (A-19).
 
 ## Histórico
 

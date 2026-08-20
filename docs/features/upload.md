@@ -4,7 +4,7 @@ Recebe, valida e serve as fotos dos produtos.
 
 **Onde fica**: `product-service`. Escrita junto com o produto (`POST` e `PATCH` de `/v1/product`), leitura em `/uploads/**`.
 **Status**: funcional e endurecido, com uma limitação de arquitetura em aberto.
-**Última revisão**: 11/08/2026.
+**Última revisão**: 20/08/2026.
 
 ## Por que este documento existe separado
 
@@ -84,6 +84,20 @@ O `U-11` só apareceu ao rodar `docker compose up` de verdade: a suíte inteira 
 | `TransactionalFileIoTest` (4) | arquivo órfão após rollback; imagem apagada de produto que sobreviveu |
 | `ProductImageUrlTest` (4) | URL divergente entre endpoints; imagem inalcançável para anônimo |
 
+### Verificado na auditoria de 20/08/2026
+
+Três arquivos enviados de propósito contra a stack de pé, autenticado como ADMIN:
+
+| Arquivo | Resultado |
+|---|---|
+| SVG com `<script>` e `onload` | `400` |
+| HTML puro com extensão `.png` e `Content-Type: image/png` | `400` |
+| **poliglota**: assinatura PNG seguida de `<script>` | `201`, aceito |
+
+O poliglota passa porque a detecção olha os bytes iniciais, e eles são de um PNG de verdade. Ele **não é explorável do jeito que costuma ser**, e isso foi medido em vez de suposto: o arquivo é servido como `image/png` com `X-Content-Type-Options: nosniff`, tanto direto quanto pelo domínio do site, então o navegador não o interpreta como HTML. Some com o `nosniff` e a história muda, que é o motivo de ele estar na lista do que não pode sair.
+
+Vale registrar o limite: quem envia precisa ser ADMIN, ou seja, a própria vendedora. O risco real aqui não é um estranho, é um arquivo aceito hoje que vira problema quando alguma outra defesa cair.
+
 ### O que NÃO está coberto
 
 - **Arquivo acima do limite de 10MB**: o teto está configurado e o handler existe, mas nenhum teste envia um arquivo grande de verdade.
@@ -125,6 +139,7 @@ SELECT id, name FROM tb_products WHERE image_path IS NULL OR image_path = '';
 
 | Data | O que mudou |
 |---|---|
+| 20/08/2026 | auditoria de upload: SVG e HTML disfarçado recusados, poliglota aceito mas neutralizado pelo `nosniff` |
 | 11/08/2026 | volume nomeado no compose, permissão do volume corrigida (U-11) |
 | 19/08/2026 | imagens passaram a ser servidas pelo domínio do frontend, por rewrite; o frontend estático em nginx foi substituído pelo Next |
 | 10/08/2026 | I/O de disco movida para depois do commit |
