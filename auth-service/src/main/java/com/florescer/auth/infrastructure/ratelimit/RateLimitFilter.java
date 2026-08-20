@@ -31,9 +31,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private static final Set<String> PROTECTED_PATHS = Set.of("/v1/auth/login", "/v1/auth/register");
 
     private final RateLimiter rateLimiter;
+    private final ClientResolver clientResolver;
 
-    public RateLimitFilter(RateLimiter rateLimiter) {
+    public RateLimitFilter(RateLimiter rateLimiter, ClientResolver clientResolver) {
         this.rateLimiter = rateLimiter;
+        this.clientResolver = clientResolver;
     }
 
     @Override
@@ -52,7 +54,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
 
-        String clientKey = clientKey(request);
+        String clientKey = clientResolver.resolve(request);
 
         if (rateLimiter.tryAcquire(clientKey)) {
             chain.doFilter(request, response);
@@ -94,16 +96,4 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 .orElse("rota protegida");
     }
 
-    /**
-     * Identifica o cliente pelo endereço de origem.
-     *
-     * <p>Atrás de proxy ou balanceador, o endereço da conexão é o do próprio
-     * proxy, e todos os usuários compartilhariam a mesma cota. O
-     * {@code X-Forwarded-For} resolve isso, mas só é confiável quando o proxy é
-     * quem o preenche: exposto direto na internet, o cliente escolhe o valor e
-     * escapa do limite trocando de valor a cada tentativa.
-     */
-    private String clientKey(HttpServletRequest request) {
-        return request.getRemoteAddr();
-    }
 }

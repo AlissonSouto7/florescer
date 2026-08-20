@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -21,6 +22,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import com.florescer.auth.exception.custom.TooManyAttemptsException;
 import com.florescer.auth.exception.custom.EmailAlreadyRegisteredException;
 import com.florescer.auth.exception.custom.EmailNotFoundException;
 
@@ -89,6 +91,23 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleBadCredentials(BadCredentialsException ex) {
         log.warn("Falha de autenticação: credenciais não conferem.");
         return status(HttpStatus.UNAUTHORIZED, "Autenticação falhou", "E-mail ou senha incorretos");
+    }
+
+    /**
+     * Erros de senha demais para a mesma conta.
+     *
+     * <p>Mesma resposta do limite por origem, para quem está do outro lado não
+     * conseguir distinguir "esta conta existe e está bloqueada" de "você tentou
+     * demais". A diferença entre as duas frases é a lista de quem tem conta na
+     * loja.
+     */
+    @ExceptionHandler(TooManyAttemptsException.class)
+    public ResponseEntity<ApiErrorResponse> handleTooManyAttempts(TooManyAttemptsException ex) {
+        log.warn("Excesso de erros de senha na mesma conta.");
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getSecondsUntilReset()))
+                .body(new ApiErrorResponse("Muitas tentativas",
+                        "Aguarde alguns instantes e tente novamente."));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

@@ -7,6 +7,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.florescer.auth.exception.custom.TooManyAttemptsException;
+import com.florescer.auth.infrastructure.ratelimit.FailedLoginTracker;
 import com.florescer.auth.application.repository.RoleRepository;
 import com.florescer.auth.application.repository.UserRepository;
 import com.florescer.auth.domain.dto.LoginRequest;
@@ -34,6 +36,7 @@ public class AuthServiceImpl implements AuthService {
 	private final JwtService jwtService;
 	private final AuthenticationManager authenticationManager;
 	private final SensitiveData sensitiveData;
+	private final FailedLoginTracker failedLoginTracker;
 
 	@Override
 	public RegisterResponse register(@Valid RegisterRequest request) {
@@ -48,19 +51,48 @@ public class AuthServiceImpl implements AuthService {
 		return new RegisterResponse(user.getUserId());
 	}
 
+	/**
+	 * Entra na conta, com a contagem de erros por conta no caminho.
+	 *
+	 * <p>A ordem aqui é a parte que importa, e ela é deliberada: <b>a senha é
+	 * verificada primeiro, e só quem erra é recusado pelo contador</b>. Quem
+	 * acerta entra mesmo com o contador estourado.
+	 *
+	 * <p>Recusar antes de verificar seria mais barato, e foi assim que a versão
+	 * anterior funcionava. O problema é que isso entrega a chave do painel a
+	 * qualquer um: dez senhas erradas contra a conta da vendedora e ela fica de
+	 * fora, sem ter feito nada, até a janela virar. Repetindo a cada janela,
+	 * indefinidamente. Errar a senha de alguém não pode ser uma forma de
+	 * trancar essa pessoa.
+	 *
+	 * <p>O contador zera no acerto: errar três vezes e lembrar a senha não pode
+	 * deixar a conta a três erros do bloqueio pelo resto da janela.
+	 */
 	@Override
 	public LoginResponse login(@Valid LoginRequest request) {
 
 		String subject = sensitiveData.pseudonymize(request.email());
 		log.info("Tentativa de login: subject={}", subject);
 
+		boolean bloqueada = failedLoginTracker.isBlocked(request.email());
+
 		try {
 			String accessToken = authenticatesGeneratesToken(request);
+			failedLoginTracker.recordSuccess(request.email());
 			log.info("Login bem-sucedido: subject={}", subject);
 			return new LoginResponse(accessToken);
 
 		} catch (BadCredentialsException ex) {
+			failedLoginTracker.recordFailure(request.email());
 			log.warn("Falha no login: subject={}", subject);
+
+			if (bloqueada) {
+				// O log não traz o e-mail: o pseudônimo dá o rastro sem colocar
+				// a lista de quem tem conta na loja dentro do arquivo de log.
+				log.warn("Conta com excesso de erros de senha: subject={}", subject);
+				throw new TooManyAttemptsException(failedLoginTracker.secondsUntilReset(request.email()));
+			}
+
 			throw new BadCredentialsException("Credenciais inválidas.");
 		}
 	}

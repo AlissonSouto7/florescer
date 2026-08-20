@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 
+import org.springframework.test.context.TestPropertySource;
+
 import com.florescer.product.support.AbstractIntegrationTest;
 
 /**
@@ -21,6 +23,10 @@ import com.florescer.product.support.AbstractIntegrationTest;
  * Swagger consome para montar o formulário de upload.
  */
 @AutoConfigureMockMvc
+// A documentação viva é desligada por padrão para não publicar o mapa do
+// sistema em produção. Aqui ela é ligada de propósito: é justamente o
+// contrato dela que este teste verifica.
+@TestPropertySource(properties = "SWAGGER_ENABLED=true")
 class OpenApiContractTest extends AbstractIntegrationTest {
 
     private static final String CREATE_MULTIPART =

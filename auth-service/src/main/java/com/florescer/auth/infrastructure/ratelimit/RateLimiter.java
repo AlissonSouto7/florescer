@@ -65,6 +65,26 @@ public class RateLimiter {
     }
 
     /**
+     * Se a chave ainda tem cota, <b>sem gastar uma tentativa</b>.
+     *
+     * <p>A diferença para o {@link #tryAcquire(String)} não é detalhe: existe
+     * caso em que a decisão de recusar depende do resultado da operação, e não
+     * da tentativa. É o do login por conta, onde a senha certa precisa passar
+     * mesmo com o contador estourado, e por isso a consulta não pode, ela
+     * própria, empurrar o contador para cima.
+     */
+    public boolean wouldAllow(String key) {
+        Window current = windows.get(key);
+        if (current == null) {
+            return true;
+        }
+        if (clock.instant().isAfter(current.startedAt().plus(window))) {
+            return true;
+        }
+        return current.attempts() < maxAttempts;
+    }
+
+    /**
      * Quantos segundos faltam para a janela da chave expirar. Serve para
      * responder {@code Retry-After}, que diz ao cliente quando voltar em vez de
      * deixá-lo tentando.
