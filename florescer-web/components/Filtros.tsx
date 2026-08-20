@@ -1,22 +1,44 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { AMBIENTE, DIFICULDADE, LUMINOSIDADE } from '@/lib/rotulos';
-import { Select } from './Select';
+import { FiltroDePreco } from './FiltroDePreco';
 
 /**
- * Filtros da vitrine.
+ * Os filtros da vitrine.
  *
- * O estado mora na URL, não em memória. Assim o filtro escolhido sobrevive ao
- * recarregar, dá para mandar o link já filtrado para alguém ("olha, essas são
- * seguras pro seu gato"), e o botão voltar do navegador desfaz um filtro em vez
- * de sair da vitrine.
+ * A primeira versão era uma coluna sempre aberta ao lado das plantas. No
+ * computador funcionava; no celular, onde não existe "ao lado", a coluna ia
+ * para cima da lista e **a pessoa rolava uma tela inteira de filtros antes de
+ * ver a primeira planta**. Numa loja, isso é o contrário do que se quer: quem
+ * chega quer ver o produto, e filtrar é o que se faz depois, se precisar.
+ *
+ * Agora existe uma barra fina que mostra o que está filtrado e um botão para
+ * abrir o resto. As plantas ficam logo abaixo, em qualquer tamanho de tela.
+ *
+ * O painel abre de dois jeitos, pelo mesmo motivo de sempre (espaço):
+ *
+ * - **celular**: como gaveta sobre a tela, com um botão que fecha dizendo
+ *   quantas plantas sobraram, para a pessoa saber o resultado antes de voltar;
+ * - **computador**: empurrando o conteúdo para baixo, sem cobrir nada.
+ *
+ * O estado continua na URL. Isso faz o filtro sobreviver ao recarregar, permite
+ * mandar o link já filtrado para alguém, e faz o botão voltar desfazer um
+ * filtro em vez de sair da vitrine.
  */
-export function Filtros() {
+export function Filtros({
+  faixaDePreco,
+  quantidade,
+}: {
+  faixaDePreco: { minimo: number; maximo: number };
+  /** Quantas plantas o filtro atual encontrou, mostrado no botão da gaveta. */
+  quantidade: number;
+}) {
   const router = useRouter();
   const params = useSearchParams();
+  const [aberto, setAberto] = useState(false);
 
   const aplicar = useCallback(
     (chave: string, valor: string | null) => {
@@ -34,23 +56,34 @@ export function Filtros() {
     [params, router],
   );
 
-  const ativo = params.toString().replace(/&?page=\d+/, '') !== '';
+  const ativos = filtrosAtivos(params);
 
-  return (
-    <aside className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-stone-900">Filtrar</h2>
-        {ativo && (
-          <button
-            type="button"
-            onClick={() => router.push('/')}
-            className="text-sm text-emerald-700 underline hover:text-emerald-800"
-          >
-            limpar
-          </button>
-        )}
-      </div>
+  // Com a gaveta aberta, a página atrás não pode rolar junto: o dedo desliza a
+  // lista de plantas em vez do conteúdo da gaveta.
+  useEffect(() => {
+    if (!aberto) return;
+    const antes = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = antes;
+    };
+  }, [aberto]);
 
+  // Escape fecha, como qualquer camada sobreposta.
+  useEffect(() => {
+    if (!aberto) return;
+    function aoTeclar(e: KeyboardEvent) {
+      if (e.key === 'Escape') setAberto(false);
+    }
+    document.addEventListener('keydown', aoTeclar);
+    return () => document.removeEventListener('keydown', aoTeclar);
+  }, [aberto]);
+
+  // Os mesmos grupos servem a gaveta do celular e ao painel do computador.
+  // Devolver a lista, e não um elemento pronto, deixa cada lado escolher o
+  // próprio arranjo: empilhado num, em colunas no outro.
+  const grupos = (
+    <>
       <Grupo titulo="Luz que recebe">
         <Opcoes
           nome="light"
@@ -78,49 +111,184 @@ export function Filtros() {
         />
       </Grupo>
 
+      <Grupo titulo="Quanto quer gastar">
+        <FiltroDePreco
+          minimo={faixaDePreco.minimo}
+          maximo={faixaDePreco.maximo}
+          valor={params.get('maxPrice') ? Number(params.get('maxPrice')) : null}
+          aoEscolher={(v) => aplicar('maxPrice', v === null ? null : String(v))}
+        />
+      </Grupo>
+
       <Grupo titulo="Outros">
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-700">
-          <input
-            type="checkbox"
-            checked={params.get('petSafe') === 'true'}
-            onChange={(e) => aplicar('petSafe', e.target.checked ? 'true' : null)}
-            className="h-4 w-4 rounded border-stone-300 text-emerald-600 focus:ring-emerald-500"
+        <div className="space-y-2">
+          <Marcador
+            rotulo="Segura para cães e gatos"
+            marcado={params.get('petSafe') === 'true'}
+            aoMudar={(m) => aplicar('petSafe', m ? 'true' : null)}
           />
-          Segura para cães e gatos
-        </label>
-
-        <label className="mt-2 flex cursor-pointer items-center gap-2 text-sm text-stone-700">
-          <input
-            type="checkbox"
-            checked={params.get('onlyAvailable') === 'true'}
-            onChange={(e) => aplicar('onlyAvailable', e.target.checked ? 'true' : null)}
-            className="h-4 w-4 rounded border-stone-300 text-emerald-600 focus:ring-emerald-500"
+          <Marcador
+            rotulo="Só as disponíveis"
+            marcado={params.get('onlyAvailable') === 'true'}
+            aoMudar={(m) => aplicar('onlyAvailable', m ? 'true' : null)}
           />
-          Só as disponíveis
-        </label>
+        </div>
       </Grupo>
-
-      <Grupo titulo="Até quanto quer gastar">
-        <Select
-          aria-label="Preço máximo"
-          value={params.get('maxPrice') ?? ''}
-          onChange={(e) => aplicar('maxPrice', e.target.value || null)}
-        >
-          <option value="">Qualquer preço</option>
-          <option value="30">Até R$ 30</option>
-          <option value="50">Até R$ 50</option>
-          <option value="100">Até R$ 100</option>
-          <option value="200">Até R$ 200</option>
-        </Select>
-      </Grupo>
-    </aside>
+    </>
   );
+
+  return (
+    <div className="mb-6">
+      {/* A barra: o que está filtrado, e como mexer nisso. */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setAberto((a) => !a)}
+          aria-expanded={aberto}
+          aria-controls="painel-de-filtros"
+          className="flex items-center gap-2 rounded-full border border-stone-300 bg-white px-4 py-2
+                     text-sm font-medium text-stone-700 transition hover:border-stone-400
+                     focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+        >
+          <svg viewBox="0 0 16 16" aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
+            <path d="M2 4h12M4.5 8h7M7 12h2" />
+          </svg>
+          Filtrar
+          {ativos.length > 0 && (
+            <span className="rounded-full bg-emerald-600 px-1.5 text-xs font-semibold text-white">
+              {ativos.length}
+            </span>
+          )}
+        </button>
+
+        {/* Os filtros escolhidos, removíveis um a um: sem isso, desfazer exige
+            abrir o painel e caçar qual estava marcado. */}
+        {ativos.map((f) => (
+          <button
+            key={f.chave}
+            type="button"
+            onClick={() => aplicar(f.chave, null)}
+            className="flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50
+                       py-2 pl-3 pr-2 text-sm text-emerald-900 transition hover:bg-emerald-100
+                       focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+            aria-label={`Remover filtro ${f.rotulo}`}
+          >
+            {f.rotulo}
+            <svg viewBox="0 0 16 16" aria-hidden="true" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="m4 4 8 8M12 4l-8 8" />
+            </svg>
+          </button>
+        ))}
+
+        {ativos.length > 1 && (
+          <button
+            type="button"
+            onClick={() => router.push('/')}
+            className="text-sm text-stone-500 underline transition hover:text-stone-800"
+          >
+            limpar tudo
+          </button>
+        )}
+      </div>
+
+      {/* Computador: o painel empurra o conteúdo, sem cobrir a vitrine. */}
+      {aberto && (
+        <div
+          id="painel-de-filtros"
+          className="mt-4 hidden rounded-2xl border border-stone-200 bg-white p-6 lg:block"
+        >
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">{grupos}</div>
+        </div>
+      )}
+
+      {/* Celular: gaveta por cima, com a lista intacta atrás. */}
+      {aberto && (
+        <div className="fixed inset-0 z-40 lg:hidden">
+          <div
+            className="absolute inset-0 bg-stone-900/40"
+            onClick={() => setAberto(false)}
+            aria-hidden="true"
+          />
+
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Filtros"
+            className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-auto rounded-t-3xl bg-white
+                       p-6 pb-28 shadow-2xl"
+          >
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-stone-900">Filtrar</h2>
+              <button
+                type="button"
+                onClick={() => setAberto(false)}
+                aria-label="Fechar filtros"
+                className="rounded-full p-2 text-stone-500 transition hover:bg-stone-100"
+              >
+                <svg viewBox="0 0 16 16" aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="m4 4 8 8M12 4l-8 8" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-6">{grupos}</div>
+
+            {/* Fixo no rodapé da gaveta: dizer quantas plantas sobraram evita
+                fechar, olhar, e abrir de novo para ajustar. */}
+            <div className="fixed inset-x-0 bottom-0 border-t border-stone-200 bg-white p-4">
+              <button
+                type="button"
+                onClick={() => setAberto(false)}
+                className="w-full rounded-xl bg-emerald-600 px-6 py-3 font-semibold text-white
+                           transition hover:bg-emerald-700"
+              >
+                Ver {quantidade} {quantidade === 1 ? 'planta' : 'plantas'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** O que está filtrado agora, já em português e pronto para virar chip. */
+function filtrosAtivos(params: URLSearchParams) {
+  const ativos: { chave: string; rotulo: string }[] = [];
+
+  const luz = params.get('light');
+  if (luz && luz in LUMINOSIDADE) {
+    ativos.push({ chave: 'light', rotulo: LUMINOSIDADE[luz as keyof typeof LUMINOSIDADE] });
+  }
+
+  const ambiente = params.get('environment');
+  if (ambiente && ambiente in AMBIENTE) {
+    ativos.push({ chave: 'environment', rotulo: AMBIENTE[ambiente as keyof typeof AMBIENTE] });
+  }
+
+  const dificuldade = params.get('difficulty');
+  if (dificuldade && dificuldade in DIFICULDADE) {
+    ativos.push({ chave: 'difficulty', rotulo: DIFICULDADE[dificuldade as keyof typeof DIFICULDADE] });
+  }
+
+  const teto = params.get('maxPrice');
+  if (teto) ativos.push({ chave: 'maxPrice', rotulo: `Até R$ ${teto}` });
+
+  if (params.get('petSafe') === 'true') {
+    ativos.push({ chave: 'petSafe', rotulo: 'Segura para pets' });
+  }
+
+  if (params.get('onlyAvailable') === 'true') {
+    ativos.push({ chave: 'onlyAvailable', rotulo: 'Só disponíveis' });
+  }
+
+  return ativos;
 }
 
 function Grupo({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
     <div>
-      <h3 className="mb-2 text-sm font-medium text-stone-500">{titulo}</h3>
+      <h3 className="mb-3 text-sm font-medium text-stone-500">{titulo}</h3>
       {children}
     </div>
   );
@@ -149,7 +317,7 @@ function Opcoes({
             // desfazer, sem precisar procurar o "limpar".
             onClick={() => aoEscolher(nome, selecionado ? null : valor)}
             aria-pressed={selecionado}
-            className={`rounded-full border px-3 py-1 text-sm transition ${
+            className={`rounded-full border px-3.5 py-2 text-sm transition ${
               selecionado
                 ? 'border-emerald-600 bg-emerald-600 text-white'
                 : 'border-stone-300 bg-white text-stone-700 hover:border-emerald-400'
@@ -160,5 +328,27 @@ function Opcoes({
         );
       })}
     </div>
+  );
+}
+
+function Marcador({
+  rotulo,
+  marcado,
+  aoMudar,
+}: {
+  rotulo: string;
+  marcado: boolean;
+  aoMudar: (marcado: boolean) => void;
+}) {
+  return (
+    <label className="flex cursor-pointer items-center gap-2.5 text-sm text-stone-700">
+      <input
+        type="checkbox"
+        checked={marcado}
+        onChange={(e) => aoMudar(e.target.checked)}
+        className="h-4 w-4 rounded border-stone-300 text-emerald-600 focus:ring-emerald-500"
+      />
+      {rotulo}
+    </label>
   );
 }

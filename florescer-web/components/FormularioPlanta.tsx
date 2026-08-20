@@ -21,6 +21,11 @@ export function FormularioPlanta({ planta }: { planta?: Planta }) {
   const [imagem, setImagem] = useState<File | null>(null);
   const [previa, setPrevia] = useState<string | null>(planta ? caminhoDaImagem(planta.imageUrl) : null);
   const [erros, setErros] = useState<Record<string, string>>({});
+  const [status, setStatus] = useState<string>(planta?.status ?? 'ATIVO');
+  const [luz, setLuz] = useState<string>(planta?.light ?? 'MEIA_SOMBRA');
+  const [rega, setRega] = useState<string>(planta?.watering ?? 'SEMANAL');
+  const [ambiente, setAmbiente] = useState<string>(planta?.environment ?? 'INTERNO');
+  const [dificuldade, setDificuldade] = useState<string>(planta?.difficulty ?? 'FACIL');
   const [enviando, setEnviando] = useState(false);
   const urlDaPrevia = useRef<string | null>(null);
 
@@ -173,11 +178,18 @@ export function FormularioPlanta({ planta }: { planta?: Planta }) {
         </div>
 
         <Campo id="status" rotulo="Situação" erro={erros.status}>
-          <Select id="status" name="status" defaultValue={planta?.status ?? 'ATIVO'}>
-            <option value="ATIVO">Aparece na vitrine</option>
-            <option value="INATIVO">Escondida</option>
-            <option value="ESGOTADO">Esgotada</option>
-          </Select>
+          <Select
+            id="status"
+            name="status"
+            rotuloAcessivel="Situação da planta"
+            valor={status}
+            aoMudar={setStatus}
+            opcoes={[
+              { valor: 'ATIVO', rotulo: 'Aparece na vitrine' },
+              { valor: 'INATIVO', rotulo: 'Escondida', detalhe: 'Ninguém vê, e você não perde o cadastro' },
+              { valor: 'ESGOTADO', rotulo: 'Esgotada', detalhe: 'Aparece na vitrine, sem botão de comprar' },
+            ]}
+          />
         </Campo>
       </Secao>
 
@@ -196,38 +208,52 @@ export function FormularioPlanta({ planta }: { planta?: Planta }) {
         </Campo>
 
         <Campo id="light" rotulo="Quanta luz ela aguenta" erro={erros.light} obrigatorio>
-          <Select id="light" name="light" defaultValue={planta?.light ?? 'MEIA_SOMBRA'}>
-            {Object.entries(LUMINOSIDADE).map(([valor, rotulo]) => (
-              <option key={valor} value={valor}>
-                {rotulo} &mdash; {LUMINOSIDADE_DETALHE[valor as keyof typeof LUMINOSIDADE_DETALHE]}
-              </option>
-            ))}
-          </Select>
+          <Select
+            id="light"
+            name="light"
+            rotuloAcessivel="Quanta luz a planta aguenta"
+            valor={luz}
+            aoMudar={setLuz}
+            opcoes={Object.entries(LUMINOSIDADE).map(([valor, rotulo]) => ({
+              valor,
+              rotulo,
+              detalhe: LUMINOSIDADE_DETALHE[valor as keyof typeof LUMINOSIDADE_DETALHE],
+            }))}
+          />
         </Campo>
 
         <Campo id="watering" rotulo="De quanto em quanto tempo regar" erro={erros.watering} obrigatorio>
-          <Select id="watering" name="watering" defaultValue={planta?.watering ?? 'SEMANAL'}>
-            {Object.entries(REGA).map(([valor, rotulo]) => (
-              <option key={valor} value={valor}>{rotulo}</option>
-            ))}
-          </Select>
+          <Select
+            id="watering"
+            name="watering"
+            rotuloAcessivel="De quanto em quanto tempo regar"
+            valor={rega}
+            aoMudar={setRega}
+            opcoes={Object.entries(REGA).map(([valor, rotulo]) => ({ valor, rotulo }))}
+          />
         </Campo>
 
         <div className="grid grid-cols-2 gap-4">
           <Campo id="environment" rotulo="Onde ela vive bem" erro={erros.environment} obrigatorio>
-            <Select id="environment" name="environment" defaultValue={planta?.environment ?? 'INTERNO'}>
-              {Object.entries(AMBIENTE).map(([valor, rotulo]) => (
-                <option key={valor} value={valor}>{rotulo}</option>
-              ))}
-            </Select>
+            <Select
+              id="environment"
+              name="environment"
+              rotuloAcessivel="Onde a planta vive bem"
+              valor={ambiente}
+              aoMudar={setAmbiente}
+              opcoes={Object.entries(AMBIENTE).map(([valor, rotulo]) => ({ valor, rotulo }))}
+            />
           </Campo>
 
           <Campo id="difficulty" rotulo="Dá trabalho?" erro={erros.difficulty} obrigatorio>
-            <Select id="difficulty" name="difficulty" defaultValue={planta?.difficulty ?? 'FACIL'}>
-              {Object.entries(DIFICULDADE).map(([valor, rotulo]) => (
-                <option key={valor} value={valor}>{rotulo}</option>
-              ))}
-            </Select>
+            <Select
+              id="difficulty"
+              name="difficulty"
+              rotuloAcessivel="Quanto a planta dá de trabalho"
+              valor={dificuldade}
+              aoMudar={setDificuldade}
+              opcoes={Object.entries(DIFICULDADE).map(([valor, rotulo]) => ({ valor, rotulo }))}
+            />
           </Campo>
         </div>
 
