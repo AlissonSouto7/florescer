@@ -99,7 +99,7 @@ O Florescer tem release versionado, um ambiente de staging antes de produção, 
 
 Se o projeto virasse deploy contínuo com feature flags, GitHub Flow passaria a ser a escolha certa. O fluxo serve ao ritmo de release, não o contrário.
 
-## A armadilha que este projeto tem hoje: histórico linear com release branch
+## A armadilha do histórico linear com release branch, e como foi resolvida
 
 **As duas proteções que a `main` e a `develop` usam entram em conflito com o modelo descrito acima**, e isso não é teoria: custou 55 arquivos em conflito na release 0.2.0.
 
@@ -130,18 +130,35 @@ Só o frontend estático que o Next substituiu. Todo o resto a `develop` tinha e
 
 Depois do back-merge, o mesmo teste de merge caiu de 55 conflitos para **6**, e os 6 são só os arquivos onde a `develop` está legitimamente à frente (as dependências que entraram depois da release ser cortada).
 
-### O que fazer a respeito
+### A decisão: o histórico linear foi desligado
 
-O problema **volta a cada release**, porque a causa continua lá. Duas saídas, e as duas são escolha consciente:
+Em 21/08/2026, `required_linear_history` foi desligado na `main` e na `develop`.
 
-| Saída | O que muda | Custo |
+Histórico linear combina com GitHub Flow e trunk-based, onde tudo entra por squash numa branch só. Com GitFlow, que existe justamente para ter duas linhas vivas, ele briga com o modelo: **escolher os dois é escolher o conflito**, e o conflito cresce com o tamanho de cada versão.
+
+O que **não** mudou, e vale dizer porque a API de proteção de branch substitui a regra inteira e perde em silêncio tudo que não for reenviado:
+
+| | Antes | Depois |
 |---|---|---|
-| **Desligar `required_linear_history` na `main` e na `develop`** | a release passa a chegar por commit de merge, e as histórias ficam ligadas para sempre | perde-se o histórico linear, que é uma propriedade boa de leitura |
-| **Manter o squash e reconciliar a cada release** | nada muda no dia a dia | uma resolução manual por release, que cresce com o tamanho da versão |
+| checks obrigatórios | 12 | 12 |
+| pull request obrigatório | sim | sim |
+| force push | bloqueado | bloqueado |
+| deleção da branch | bloqueada | bloqueada |
+| conversa resolvida | exigida | exigida |
+| histórico linear | exigido | **desligado** |
 
-Histórico linear combina com GitHub Flow e trunk-based, onde tudo entra por squash numa branch só. Com GitFlow, que existe justamente para ter duas linhas vivas, ele briga com o modelo. **Escolher os dois é escolher o conflito.**
+A conferência foi feita comparando as duas configurações campo a campo: 8 de 9 idênticos, e a única diferença é a pretendida.
 
-Enquanto a decisão não é tomada, o procedimento da release é: cortar a branch da `develop`, mergear `origin/main` dentro dela resolvendo pelo lado da release, conferir que a árvore não mudou, e só então abrir o PR.
+### Como a release funciona a partir daqui
+
+A release volta a ser o que o GitFlow descreve, sem passo manual de reconciliação:
+
+1. `release/x.y.z` sai da `develop`, com a versão subida nos artefatos e o changelog fechado;
+2. PR para a `main`, que agora entra por **commit de merge**;
+3. tag `vx.y.z` na `main`;
+4. `main` de volta para a `develop`, também por merge.
+
+O passo 4 é o que mantém as duas branches compartilhando história. Pular ele é reintroduzir o problema.
 
 ## Erros comuns (que este projeto já cometeu)
 
