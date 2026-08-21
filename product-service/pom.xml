@@ -11,7 +11,7 @@
 	</parent>
 	<groupId>com.florescer</groupId>
 	<artifactId>product-service</artifactId>
-	<version>0.1.0</version>
+	<version>0.2.0</version>
 	<name>product-service</name>
 	<description>Service for products</description>
 	<properties>
