@@ -10,7 +10,7 @@ import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
@@ -111,7 +111,9 @@ class ProductValidationTest extends AbstractIntegrationTest {
                 .andExpect(status().isCreated());
     }
 
-    private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder criarProduto(String json) {
+    // O tipo concreto, e nao o pai: no Spring Framework 7 o construtor de
+    // multipart deixou de ser um MockHttpServletRequestBuilder.
+    private org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder criarProduto(String json) {
         MockMultipartFile produto = new MockMultipartFile(
                 "product", "", MediaType.APPLICATION_JSON_VALUE, json.getBytes());
         MockMultipartFile imagem = new MockMultipartFile(

@@ -6,17 +6,17 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.5.0</version>
+		<version>4.1.0</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.florescer</groupId>
 	<artifactId>auth-service</artifactId>
-	<version>0.2.0</version>
+	<version>0.3.0</version>
 	<name>auth-service</name>
 	<description>Authorization and authentication service</description>
 	<properties>
 		<java.version>17</java.version>
-		<jacoco.version>0.8.12</jacoco.version>
+		<jacoco.version>0.8.15</jacoco.version>
 		<!-- Sobrescreve a versao do BOM do Spring Boot: a 1.21.0 nao fala a API do Docker Engine 29+. -->
 		<testcontainers.version>1.21.4</testcontainers.version>
 		<!--
@@ -47,7 +47,7 @@
 		<dependency>
 			<groupId>net.logstash.logback</groupId>
 			<artifactId>logstash-logback-encoder</artifactId>
-			<version>8.1</version>
+			<version>9.0</version>
 		</dependency>
 
 		<!--
@@ -100,14 +100,18 @@
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-			<version>2.8.1</version>
+			<version>3.1.0</version>
 		</dependency>
 
 		<!-- O schema passa a ser versionado: cada mudanca e um arquivo revisavel,
 		     aplicado na mesma ordem em todo ambiente. -->
+		<!-- O starter, e nao o flyway-core solto: no Spring Boot 4 a
+		     autoconfiguracao do Flyway saiu do spring-boot-autoconfigure e
+		     virou modulo proprio. Com o core sozinho, as migrations nao
+		     rodam e o Hibernate acusa tabela faltando na validacao. -->
 		<dependency>
-			<groupId>org.flywaydb</groupId>
-			<artifactId>flyway-core</artifactId>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-flyway</artifactId>
 		</dependency>
 
 		<dependency>
@@ -118,6 +122,21 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<!-- O launcher do JUnit Platform, explicito.
+		     Com o JUnit 6 do Spring Boot 4 ele deixou de vir por transitividade,
+		     e sem ele o Surefire descobre so as classes de topo: as classes
+		     @Nested somem da execucao SEM falhar nada. O build fica verde com
+		     11 testes a menos, que e pior do que quebrar. -->
+		<dependency>
+			<groupId>org.junit.platform</groupId>
+			<artifactId>junit-platform-launcher</artifactId>
 			<scope>test</scope>
 		</dependency>
 

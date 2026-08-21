@@ -4,6 +4,29 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), 
 
 ## Não lançado
 
+## [0.3.0] - 2026-08-21
+
+Versão de manutenção: a base sobe uma major inteira, e o processo de release deixa de brigar com o modelo de branches. Nada muda para quem compra nem para quem vende.
+
+### Alterado
+
+- Dependências em dia: JaCoCo 0.8.15, logstash-logback-encoder 9.0, Maven 3.9.16, e as actions do GitHub (codeql-action v4, setup-java v5, upload-artifact v7, gitleaks-action v3), todas ainda fixadas por SHA de commit.
+- **Spring Boot 3.5 para 4.1** nos dois serviços, com springdoc 3.1 junto. Traz Spring Framework 7 e JUnit 6 por baixo. A migração exigiu declarar o que os starters carregavam de graça: `spring-boot-webmvc-test` para o `@AutoConfigureMockMvc` e `spring-boot-starter-flyway` para as migrations voltarem a rodar. O Jackson passou de 2 para 3 (`com.fasterxml` para `tools.jackson`).
+- **`required_linear_history` desligado** na `main` e na `develop`. Ele proíbe commit de merge, e commit de merge é como duas linhas se reencontram: com GitFlow, que existe para manter `main` e `develop` vivas ao mesmo tempo, manter a regra significava um conflito de reconciliação a cada release. A 0.2.0 pagou 55 arquivos em conflito por causa disso. Os doze checks obrigatórios, o PR obrigatório e o bloqueio de force push continuam como estavam.
+
+### Corrigido
+
+- A `main` e a `develop` voltaram a compartilhar história. Enquanto a release chegava por squash, o commit criado nunca era ancestral da `develop`, e o git deixava de conseguir comparar as duas branches.
+
+
+### Conhecido e em aberto
+
+- Token da vendedora em `sessionStorage`; a `Content-Security-Policy` limita a saída do dado, não a execução do script.
+- O limite por origem só é confiável com um proxy de borda que escreva o `X-Forwarded-For`. Quem protege a senha é a contagem por conta.
+- Sem HTTPS e sem HSTS, porque ainda não há domínio.
+- Deploy ainda é placeholder: as imagens são construídas, escaneadas e publicadas, e nada as puxa.
+- Sem `aud` nem `jti` no token, e sem revogação.
+
 ## [0.2.0] - 2026-08-21
 
 A loja deixou de depender de quem tem acesso ao servidor. A vendedora edita os dados da própria loja, a vitrine passou a ser navegável no celular, e uma auditoria de segurança fechou o caminho que trancava ela fora do painel com dez requisições.

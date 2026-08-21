@@ -99,9 +99,71 @@ O Florescer tem release versionado, um ambiente de staging antes de produção, 
 
 Se o projeto virasse deploy contínuo com feature flags, GitHub Flow passaria a ser a escolha certa. O fluxo serve ao ritmo de release, não o contrário.
 
+## A armadilha do histórico linear com release branch, e como foi resolvida
+
+**As duas proteções que a `main` e a `develop` usam entram em conflito com o modelo descrito acima**, e isso não é teoria: custou 55 arquivos em conflito na release 0.2.0.
+
+### O que aconteceu, medido
+
+A `main` exige `required_linear_history`, que proíbe commit de merge. Sob essa regra, o único jeito de a release chegar lá é **squash**: 49 commits viram um só, novo, cujo pai é a ponta antiga da `main`.
+
+O efeito é que **os commits da `develop` nunca viram ancestrais da `main`**. As duas branches passam a ter o mesmo trabalho com sha diferente, e o git deixa de conseguir compará-las: cada arquivo que existe dos dois lados e não existia no ancestral comum vira conflito `add/add`.
+
+Na 0.2.0, abrir o PR da release para a `main` deu isto:
+
+```
+CONFLICT (add/add): 55 arquivos
+merge-base: 640f0aa  (um commit de infraestrutura, de antes de quase tudo)
+```
+
+Não era conflito de conteúdo. Era o git dizendo que não sabia que as duas branches eram a mesma coisa.
+
+### Como foi resolvido, e por que foi seguro
+
+Antes de resolver, foi medido o que a `main` tinha e a `develop` não:
+
+```
+arquivos só na main: 8   →   todos de florescer-frontend/
+```
+
+Só o frontend estático que o Next substituiu. Todo o resto a `develop` tinha em versão mais nova. Com isso, um merge da `main` para dentro da release pegando o lado da release (`-X ours`) não descarta nada que importe, e a prova foi comparar as árvores: **idênticas antes e depois**, ou seja, nada da `main` entrou.
+
+Depois do back-merge, o mesmo teste de merge caiu de 55 conflitos para **6**, e os 6 são só os arquivos onde a `develop` está legitimamente à frente (as dependências que entraram depois da release ser cortada).
+
+### A decisão: o histórico linear foi desligado
+
+Em 21/08/2026, `required_linear_history` foi desligado na `main` e na `develop`.
+
+Histórico linear combina com GitHub Flow e trunk-based, onde tudo entra por squash numa branch só. Com GitFlow, que existe justamente para ter duas linhas vivas, ele briga com o modelo: **escolher os dois é escolher o conflito**, e o conflito cresce com o tamanho de cada versão.
+
+O que **não** mudou, e vale dizer porque a API de proteção de branch substitui a regra inteira e perde em silêncio tudo que não for reenviado:
+
+| | Antes | Depois |
+|---|---|---|
+| checks obrigatórios | 12 | 12 |
+| pull request obrigatório | sim | sim |
+| force push | bloqueado | bloqueado |
+| deleção da branch | bloqueada | bloqueada |
+| conversa resolvida | exigida | exigida |
+| histórico linear | exigido | **desligado** |
+
+A conferência foi feita comparando as duas configurações campo a campo: 8 de 9 idênticos, e a única diferença é a pretendida.
+
+### Como a release funciona a partir daqui
+
+A release volta a ser o que o GitFlow descreve, sem passo manual de reconciliação:
+
+1. `release/x.y.z` sai da `develop`, com a versão subida nos artefatos e o changelog fechado;
+2. PR para a `main`, que agora entra por **commit de merge**;
+3. tag `vx.y.z` na `main`;
+4. `main` de volta para a `develop`, também por merge.
+
+O passo 4 é o que mantém as duas branches compartilhando história. Pular ele é reintroduzir o problema.
+
 ## Erros comuns (que este projeto já cometeu)
 
 - **Commitar direto na `main` sem PR.** O histórico do Florescer começou assim: dois commits gigantes, um deles com mensagem "Substituindo conteúdo do repositório remoto", misturando três assuntos e uma chave privada. Impossível revisar, impossível reverter em partes.
 - **Branch de vida longa que nunca integra.** Uma feature branch de duas semanas vira um merge doloroso. Se a tarefa é grande, quebre em issues menores que integrem sozinhas.
 - **Esquecer o merge de volta na `develop`** depois de um hotfix.
+- **Squashar a release na `main` sem trazer a `main` de volta.** O commit criado pelo squash não é ancestral da `develop`, e as duas branches se afastam em silêncio até a próxima release não conseguir mergear. Ver a seção sobre histórico linear acima.
 - **Nome de branch sem o número da issue.** Meses depois, `feature/ajustes` não diz nada; `feature/12-cors-config` liga direto ao contexto da issue.
