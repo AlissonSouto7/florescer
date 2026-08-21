@@ -7,7 +7,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), 
 ### Alterado
 
 - Dependências em dia: JaCoCo 0.8.15, logstash-logback-encoder 9.0, Maven 3.9.16, e as actions do GitHub (codeql-action v4, setup-java v5, upload-artifact v7, gitleaks-action v3), todas ainda fixadas por SHA de commit.
-- **springdoc segue em 2.8.1**, e não é esquecimento: o 3.1.0 traz artefatos do Spring Boot 4 e derruba o serviço com duas `ErrorMvcAutoConfiguration` no classpath. Ele sobe junto com o Spring Boot 4, não antes.
+- **Spring Boot 3.5 para 4.1** nos dois serviços, com springdoc 3.1 junto. Traz Spring Framework 7 e JUnit 6 por baixo. A migração exigiu declarar o que os starters carregavam de graça: `spring-boot-webmvc-test` para o `@AutoConfigureMockMvc` e `spring-boot-starter-flyway` para as migrations voltarem a rodar. O Jackson passou de 2 para 3 (`com.fasterxml` para `tools.jackson`).
 
 ## [0.2.0] - 2026-08-21
 
