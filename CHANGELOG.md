@@ -4,6 +4,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), 
 
 ## Não lançado
 
+### Alterado
+
+- Dependências em dia: JaCoCo 0.8.15, logstash-logback-encoder 9.0, Maven 3.9.16, e as actions do GitHub (codeql-action v4, setup-java v5, upload-artifact v7, gitleaks-action v3), todas ainda fixadas por SHA de commit.
+- **springdoc segue em 2.8.1**, e não é esquecimento: o 3.1.0 traz artefatos do Spring Boot 4 e derruba o serviço com duas `ErrorMvcAutoConfiguration` no classpath. Ele sobe junto com o Spring Boot 4, não antes.
+
+## [0.2.0] - 2026-08-21
+
+A loja deixou de depender de quem tem acesso ao servidor. A vendedora edita os dados da própria loja, a vitrine passou a ser navegável no celular, e uma auditoria de segurança fechou o caminho que trancava ela fora do painel com dez requisições.
+
 ### Adicionado
 
 - **Vitrine e painel em Next.js**, substituindo o frontend estático. A vitrine renderiza no servidor, então o HTML já chega com as plantas e cada uma é indexável.
@@ -40,6 +49,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), 
 ### Removido
 
 - Frontend estático (`florescer-frontend/`), substituído pelo Next. Junto com ele saiu a tela de registro: o comprador chega à vendedora pelo WhatsApp sem criar conta, e a conta dela vem de configuração. O endpoint de registro continua existindo e testado.
+
+### Conhecido e em aberto
+
+- Token da vendedora em `sessionStorage`, ao alcance de XSS. A `Content-Security-Policy` limita a saída do dado, não a execução do script, porque o `script-src` ainda precisa de `'unsafe-inline'` para a hidratação do Next. A correção real é cookie `HttpOnly`.
+- O limite por origem só é confiável com um proxy de borda que **escreva** o `X-Forwarded-For`: o Next repassa o do cliente sem sobrescrever. Quem protege a senha hoje é a contagem por conta, que não depende de cabeçalho.
+- Cada tentativa de login continua custando uma verificação de BCrypt, que é cara de propósito: volume alto vira consumo de CPU.
+- Sem HTTPS e sem HSTS, porque ainda não há domínio.
+- Deploy ainda é placeholder: as imagens são construídas, escaneadas e publicadas, e nada as puxa.
+- Sem `aud` nem `jti` no token, e sem revogação.
+- Uploads servidos pela mesma origem da API (issue #23), e a API devolve a URL com o host de quem chamou (issue #89).
 
 ## [0.1.0] - 2026-08-11
 
