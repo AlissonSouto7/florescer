@@ -9,12 +9,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.florescer.auth.support.AbstractIntegrationTest;
 
 /**
@@ -30,6 +30,14 @@ class JwksEndpointTest extends AbstractIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
 
+    /**
+     * O ObjectMapper do Jackson 3.
+     *
+     * <p>O Spring Boot 4 trocou o Jackson padrão de 2 para 3, e com isso o
+     * pacote mudou de {@code com.fasterxml.jackson.databind} para
+     * {@code tools.jackson.databind}. O bean do tipo antigo deixou de existir,
+     * e injetá-lo falha na subida do contexto, não na asserção.
+     */
     @Autowired
     private ObjectMapper objectMapper;
 

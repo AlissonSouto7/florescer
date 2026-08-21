@@ -9,12 +9,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.request.AbstractMockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import com.florescer.product.support.AbstractIntegrationTest;
@@ -115,8 +116,17 @@ class AuthorizationMatrixTest extends AbstractIntegrationTest {
                 new Caso("PATCH como ADMIN", HttpMethod.PATCH, ITEM, Perfil.ADMIN, 0));
     }
 
-    private MockHttpServletRequestBuilder requisicao(Caso caso) {
-        MockHttpServletRequestBuilder builder = switch (caso.metodo().name()) {
+    /**
+     * O tipo do construtor mudou no Spring Framework 7.
+     *
+     * <p>{@code MockMultipartHttpServletRequestBuilder} deixou de ser um
+     * {@code MockHttpServletRequestBuilder}: os dois passaram a descender de
+     * {@code AbstractMockHttpServletRequestBuilder}, que é o tipo comum onde
+     * {@code header()} ainda existe. Sem isso, misturar GET e multipart no
+     * mesmo switch não compila.
+     */
+    private AbstractMockHttpServletRequestBuilder<?> requisicao(Caso caso) {
+        AbstractMockHttpServletRequestBuilder<?> builder = switch (caso.metodo().name()) {
             case "GET" -> MockMvcRequestBuilders.get(caso.rota());
             case "DELETE" -> MockMvcRequestBuilders.delete(caso.rota());
             case "POST" -> multipart(HttpMethod.POST, caso.rota());
@@ -131,7 +141,7 @@ class AuthorizationMatrixTest extends AbstractIntegrationTest {
         };
     }
 
-    private MockHttpServletRequestBuilder multipart(HttpMethod metodo, String rota) {
+    private MockMultipartHttpServletRequestBuilder multipart(HttpMethod metodo, String rota) {
         return MockMvcRequestBuilders.multipart(metodo, rota)
                 .file(new MockMultipartFile("product", "", MediaType.APPLICATION_JSON_VALUE,
                         """
