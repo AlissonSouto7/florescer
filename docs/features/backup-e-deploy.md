@@ -85,6 +85,28 @@ A foto importa tanto quanto a linha no banco: restaurar só o dump devolveria a 
 
 Com tudo de pé, as 10 verificações passam e o `exit` é 0.
 
+## O backup foi parar no repositório, e isso é o mais importante daqui
+
+Em 21/08/2026, durante uma revisão, apareceu uma pasta `backups/` **versionada**, com três arquivos e 384 KB. Um deles é o dump do banco de contas.
+
+O que estava público:
+
+| | |
+|---|---|
+| tabelas com dado | `tb_users`, `tb_roles`, `tb_users_roles`, `flyway_schema_history` |
+| endereços | 1, num domínio `.test` |
+| hashes BCrypt | 1, de uma conta com papel **ADMIN** |
+
+**Como entrou.** O `.gitignore` tem `/backups/`, mas no commit `8c57111` essa linha **ainda não existia**, e um `git add -A` levou a pasta junto. A regra chegou depois, e gitignore não desrastreia o que já está rastreado: ela passou a valer para arquivo novo e não mexeu no que já tinha entrado.
+
+**O que isso significa de verdade.** A conta não é a da vendedora (`.test` é domínio reservado para teste, e a real está noutro domínio), mas **ela existe no banco e tem papel ADMIN**. Hash público é hash sem limite de tentativas: quem baixa o repositório quebra offline, sem passar por rate limit nenhum, e a política de senha do projeto é o que decide se isso é viável ou não.
+
+**O que foi feito**: a pasta saiu do rastreamento e o `.gitignore` ganhou o registro de como ela entrou.
+
+**O que continua pendente, e depende de decisão**: o arquivo continua no **histórico** do git, então quem clonar ainda alcança. Tirar de lá exige reescrever o histórico e um push forçado, que não é ação para tomar sozinho. E a conta `.test` deveria ser apagada do banco de qualquer forma, porque ela não deveria existir em ambiente nenhum.
+
+**A lição operacional**, que vale mais que a correção: `git add -A` num diretório onde o script de backup acabou de rodar leva o backup junto. Um `git status` antes de commitar mostra isso em uma linha.
+
 ## Armadilhas encontradas ao escrever
 
 **O `.env` não é script de shell.** `source .env` falha com `PRIVATE: command not found`, porque a chave RSA ocupa várias linhas e tem espaços. Os scripts leem variável por variável com `grep`.
