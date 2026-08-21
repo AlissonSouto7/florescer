@@ -48,6 +48,14 @@ node_modules/
 # Ignore bin and build if for some reason they appear
 bin/
 build/
-# Backups locais: contêm o catálogo inteiro e as fotos, e não pertencem ao
-# repositório. O servidor guarda os dele fora daqui.
+# Backups locais: contêm o catálogo inteiro, as fotos e o dump das contas, e
+# não pertencem ao repositório. O servidor guarda os dele fora daqui.
+#
+# Esta regra chegou tarde. Em 20/08/2026 um `git add -A` levou junto um
+# backup inteiro, num commit em que esta linha ainda não existia, e o dump
+# de contas ficou público com o hash BCrypt de uma conta ADMIN dentro.
+# Gitignore não desrastreia o que já está rastreado: a regra passou a valer
+# para arquivo novo e não mexeu no que já tinha entrado.
+#
+# Antes de commitar com `-A`, vale um `git status` para ver o que vai junto.
 /backups/
