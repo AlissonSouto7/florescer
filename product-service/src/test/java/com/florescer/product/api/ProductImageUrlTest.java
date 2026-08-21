@@ -1,5 +1,7 @@
 package com.florescer.product.api;
 
+import java.nio.charset.StandardCharsets;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -109,7 +111,7 @@ class ProductImageUrlTest extends AbstractIntegrationTest {
                 """;
 
         String corpo = mockMvc.perform(multipart("/v1/product")
-                        .file(new MockMultipartFile("product", "", MediaType.APPLICATION_JSON_VALUE, json.getBytes()))
+                        .file(new MockMultipartFile("product", "", MediaType.APPLICATION_JSON_VALUE, json.getBytes(StandardCharsets.UTF_8)))
                         .file(new MockMultipartFile("image", "rosa.png", MediaType.IMAGE_PNG_VALUE, PNG))
                         .header("Authorization", "Bearer " + tokenAdmin()))
                 .andExpect(status().isCreated())

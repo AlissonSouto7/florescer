@@ -1,5 +1,7 @@
 package com.florescer.product.api;
 
+import java.nio.charset.StandardCharsets;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -115,7 +117,7 @@ class ProductValidationTest extends AbstractIntegrationTest {
     // multipart deixou de ser um MockHttpServletRequestBuilder.
     private org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder criarProduto(String json) {
         MockMultipartFile produto = new MockMultipartFile(
-                "product", "", MediaType.APPLICATION_JSON_VALUE, json.getBytes());
+                "product", "", MediaType.APPLICATION_JSON_VALUE, json.getBytes(StandardCharsets.UTF_8));
         MockMultipartFile imagem = new MockMultipartFile(
                 "image", "rosa.png", MediaType.IMAGE_PNG_VALUE, PNG);
 
