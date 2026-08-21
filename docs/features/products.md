@@ -77,6 +77,8 @@ Luminosidade e segurança para animais têm índice, porque são os filtros prev
 
 | id | sev | o que era | correção |
 |---|---|---|---|
+| P-12 | baixo | o caminho do recurso ia cru para o log, e ele vem da URL do cliente. Log é arquivo de linhas: um caractere de controle no meio do valor corrompe a linha. A issue dizia "potencial", e a palavra estava certa: medido, `%0A` responde `401` e **nem chega ao handler**, mas `%09` responde `404` e chega | o valor passa por `paraLog`, que troca ``, `
+` e `	`, corta em 200 caracteres e **mantém o resto legível**, porque sanear virando apagar deixaria o handler inútil para investigar. 12 testes, e 4 de 4 mutações acusadas, incluindo a que troca sanear por apagar |
 | P-1 | alto | path traversal: nome do arquivo enviado usado como está, com `createDirectories` no caminho derivado | nome descartado, arquivo vira UUID, caminho normalizado e confinado ao diretório |
 | P-2 | alto | upload validado só pelo `Content-Type` declarado, com extensão preservada e servida estaticamente: XSS armazenado | tipo detectado pelos bytes reais, extensão derivada do tipo detectado |
 | P-3 | alto | Bean Validation nunca executava: `@Valid` numa `String` com `ObjectMapper` manual | part tipado, validação viva, handler de erro alcançável |
@@ -93,7 +95,6 @@ Luminosidade e segurança para animais têm índice, porque são os filtros prev
 
 | id | sev | o que é | por que continua aberto |
 |---|---|---|---|
-| P-12 | baixo | `GlobalExceptionHandler.java:107` registra `ex.getResourcePath()`, que vem da URL do cliente: mesma forma de log injection que o CodeQL apontou no `RateLimitFilter` | **não verificado** se é explorável. O `StrictHttpFirewall` do Spring Security rejeita caracteres de controle na URL por padrão, o que provavelmente neutraliza o caso, mas isso é hipótese e não medição. Issue #52 diz qual teste resolve a dúvida |
 | P-13 | baixo | as imagens são servidas pela mesma origem da API | separar em domínio próprio (issue #23) impede que um arquivo enviado por alguém rode no contexto da aplicação. Depende de infraestrutura que ainda não existe |
 | P-14 | baixo | rota no singular (`/v1/product`) enquanto a convenção REST pede a coleção no plural | mudar quebra o frontend; corrigir exige versionar ou migrar as duas pontas juntas |
 

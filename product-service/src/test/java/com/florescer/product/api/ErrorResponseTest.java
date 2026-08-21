@@ -1,5 +1,7 @@
 package com.florescer.product.api;
 
+import java.nio.charset.StandardCharsets;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -51,7 +53,7 @@ class ErrorResponseTest extends AbstractIntegrationTest {
     @DisplayName("json malformado devolve 400, nao 500")
     void jsonMalformadoDevolve400() throws Exception {
         MockMultipartFile produto = new MockMultipartFile(
-                "product", "", MediaType.APPLICATION_JSON_VALUE, "{isso nao e json}".getBytes());
+                "product", "", MediaType.APPLICATION_JSON_VALUE, "{isso nao e json}".getBytes(StandardCharsets.UTF_8));
         MockMultipartFile imagem = new MockMultipartFile(
                 "image", "rosa.png", MediaType.IMAGE_PNG_VALUE, PNG);
 
@@ -69,7 +71,7 @@ class ErrorResponseTest extends AbstractIntegrationTest {
                  "quantityStock":5,"careRequirements":"Regar","availability":true,"status":"NAO_EXISTE"}
                 """;
         MockMultipartFile produto = new MockMultipartFile(
-                "product", "", MediaType.APPLICATION_JSON_VALUE, json.getBytes());
+                "product", "", MediaType.APPLICATION_JSON_VALUE, json.getBytes(StandardCharsets.UTF_8));
         MockMultipartFile imagem = new MockMultipartFile(
                 "image", "rosa.png", MediaType.IMAGE_PNG_VALUE, PNG);
 

@@ -1,5 +1,7 @@
 package com.florescer.product.support;
 
+import java.nio.charset.StandardCharsets;
+
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.util.Base64;
@@ -37,7 +39,7 @@ public final class RsaTestKeys {
     }
 
     private static String pem(String type, byte[] encoded) {
-        String body = Base64.getMimeEncoder(64, System.lineSeparator().getBytes()).encodeToString(encoded);
+        String body = Base64.getMimeEncoder(64, System.lineSeparator().getBytes(StandardCharsets.UTF_8)).encodeToString(encoded);
         return "-----BEGIN " + type + "-----" + System.lineSeparator()
                 + body + System.lineSeparator()
                 + "-----END " + type + "-----" + System.lineSeparator();

@@ -1,5 +1,7 @@
 package com.florescer.product.infra.storage;
 
+import java.nio.charset.StandardCharsets;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -41,7 +43,7 @@ class ImageStorageServiceTest {
     /** Bytes de arquivos reais, para o serviço ter o que inspecionar. */
     private static final byte[] PNG = {(byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0};
     private static final byte[] JPEG = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0, 0, 0, 0, 0};
-    private static final byte[] HTML = "<script>alert(document.cookie)</script>".getBytes();
+    private static final byte[] HTML = "<script>alert(document.cookie)</script>".getBytes(StandardCharsets.UTF_8);
 
     @Test
     @DisplayName("um nome com ../ nao escreve fora da pasta de uploads")

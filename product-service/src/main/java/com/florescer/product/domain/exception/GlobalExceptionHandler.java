@@ -118,7 +118,7 @@ public class GlobalExceptionHandler {
 	 */
 	@ExceptionHandler(NoResourceFoundException.class)
 	public ResponseEntity<ApiErrorResponse> handleNoResource(NoResourceFoundException ex) {
-		log.warn("Recurso estático não encontrado: {}", ex.getResourcePath());
+		log.warn("Recurso estático não encontrado: {}", paraLog(ex.getResourcePath()));
 		return status(HttpStatus.NOT_FOUND, "Recurso não encontrado",
 				"O arquivo solicitado não existe.");
 	}
@@ -176,5 +176,29 @@ public class GlobalExceptionHandler {
 
 	private ResponseEntity<ApiErrorResponse> status(HttpStatus status, String error, Object details) {
 		return ResponseEntity.status(status).body(new ApiErrorResponse(error, details));
+	}
+
+	/**
+	 * Deixa um valor vindo do cliente seguro para ir ao log.
+	 *
+	 * <p>O caminho do recurso é escrito por quem faz a requisição, e log é
+	 * arquivo de linhas: um {@code 
+} no meio do valor cria uma linha nova, com
+	 * o texto que o cliente quiser. Dá para forjar entrada de auditoria, apagar
+	 * o rastro do que veio antes, ou envenenar quem lê o log com ferramenta.
+	 *
+	 * <p>Corta também o tamanho, porque caminho de mil caracteres não diagnostica
+	 * nada e enche o disco de quem guarda log.
+	 * <p>Visível no pacote, e não privado, de propósito: a regra é testada
+	 * diretamente. Pelo MockMvc não dá para entregar caractere de controle no
+	 * caminho (ele não decodifica o %09 como o servidor real decodifica), e um
+	 * teste que não consegue exercitar a regra não prova nada sobre ela.
+	 */
+	static String paraLog(String valor) {
+		if (valor == null) {
+			return "(vazio)";
+		}
+		String limpo = valor.replaceAll("[\r\n\t]", "_");
+		return limpo.length() <= 200 ? limpo : limpo.substring(0, 200) + "...";
 	}
 }
