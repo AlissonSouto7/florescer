@@ -23,6 +23,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.florescer.product.domain.exception.custom.DatabaseException;
 import com.florescer.product.domain.exception.custom.FileStorageException;
 import com.florescer.product.domain.exception.custom.InvalidPatchException;
+import com.florescer.product.domain.exception.custom.InvalidSettingsException;
 import com.florescer.product.domain.exception.custom.ProductNotFoundException;
 
 import lombok.extern.log4j.Log4j2;
@@ -53,6 +54,19 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ApiErrorResponse> handleInvalidPatch(InvalidPatchException ex) {
 		log.warn("Requisição inválida: {}", ex.getMessage());
 		return status(HttpStatus.BAD_REQUEST, "Requisição inválida", ex.getMessage());
+	}
+
+	/**
+	 * Dado da loja recusado depois da limpeza.
+	 *
+	 * <p>Sai no mesmo formato da Bean Validation, com o mapa de campo para
+	 * mensagem, para a tela mostrar o aviso ao lado do campo certo sem precisar
+	 * distinguir de onde o erro veio.
+	 */
+	@ExceptionHandler(InvalidSettingsException.class)
+	public ResponseEntity<ApiErrorResponse> handleInvalidSettings(InvalidSettingsException ex) {
+		log.warn("Dados da loja inválidos: {}", ex.getErrosPorCampo());
+		return ResponseEntity.badRequest().body(new ApiErrorResponse("Erro de validação", ex.getErrosPorCampo()));
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)

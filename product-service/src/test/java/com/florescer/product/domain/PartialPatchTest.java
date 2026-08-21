@@ -98,7 +98,8 @@ class PartialPatchTest extends AbstractIntegrationTest {
     @DisplayName("patch trocando status mantem o preco intacto")
     void patchDeStatusNaoMexeNoPreco() {
         service.patchProduct(original.getId(),
-                new ProductChanges(null, null, null, null, null, null, null, Status.INATIVO), null);
+                new ProductChanges(null, null, null, null, null, null, null, Status.INATIVO,
+                        null, null, null, null, null, null, null), null);
 
         Product depois = repository.findById(original.getId()).orElseThrow();
 
@@ -109,10 +110,12 @@ class PartialPatchTest extends AbstractIntegrationTest {
     }
 
     private ProductChanges somentePreco(BigDecimal preco) {
-        return new ProductChanges(null, null, null, preco, null, null, null, null);
+        return new ProductChanges(null, null, null, preco, null, null, null, null,
+                null, null, null, null, null, null, null);
     }
 
     private ProductChanges vazio() {
-        return new ProductChanges(null, null, null, null, null, null, null, null);
+        return new ProductChanges(null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null);
     }
 }

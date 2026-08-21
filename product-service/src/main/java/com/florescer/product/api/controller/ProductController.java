@@ -15,11 +15,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
+
 import com.florescer.product.api.dto.request.ProductCreateRequest;
 import com.florescer.product.api.dto.request.ProductPatchRequest;
 import com.florescer.product.api.dto.response.ProductCreateResponse;
 import com.florescer.product.api.dto.response.ProductGetResponse;
 import com.florescer.product.api.dto.response.ProductListResponse;
+import com.florescer.product.domain.enums.Difficulty;
+import com.florescer.product.domain.enums.Environment;
+import com.florescer.product.domain.enums.Light;
 
 import jakarta.validation.Valid;
 
@@ -33,7 +38,9 @@ public interface ProductController {
 			@RequestPart("image") MultipartFile image);
 	
 	@GetMapping
-	public ResponseEntity<Page<ProductListResponse>> listAll(int page, int size, String[] sort);
+	public ResponseEntity<Page<ProductListResponse>> listAll(int page, int size, String[] sort,
+			Light light, Boolean petSafe, Environment environment, Difficulty difficulty,
+			BigDecimal maxPrice, Boolean onlyAvailable);
 	
 	@GetMapping("/{id}")
 	public ResponseEntity<ProductGetResponse> findById(@PathVariable UUID id);

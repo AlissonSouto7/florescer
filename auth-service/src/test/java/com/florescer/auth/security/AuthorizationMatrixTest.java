@@ -13,6 +13,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import org.springframework.test.context.TestPropertySource;
+
 import com.florescer.auth.support.AbstractIntegrationTest;
 import com.florescer.auth.support.TestTokens;
 
@@ -29,6 +31,7 @@ import com.florescer.auth.support.TestTokens;
  * as três linhas de sempre: anônimo 401, papel errado 403, papel certo 2xx.
  */
 @AutoConfigureMockMvc
+@TestPropertySource(properties = "SWAGGER_ENABLED=true")
 class AuthorizationMatrixTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -49,6 +52,10 @@ class AuthorizationMatrixTest extends AbstractIntegrationTest {
         return List.of(
                 new Caso("JWKS, anônimo -> 200", "/.well-known/jwks.json", Perfil.ANONIMO, 200),
                 new Caso("JWKS, BASIC -> 200", "/.well-known/jwks.json", Perfil.BASIC, 200),
+                // A documentação viva é desligada por padrão (ver
+                // SWAGGER_ENABLED): publicá-la entrega o mapa das rotas e de
+                // quem precisa de token. Ligada, ela é pública de propósito,
+                // porque quem a lê em desenvolvimento não tem token ainda.
                 new Caso("OpenAPI, anônimo -> 200", "/v3/api-docs", Perfil.ANONIMO, 200));
     }
 

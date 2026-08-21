@@ -79,12 +79,32 @@ services:
       RSA_PRIVATE_KEY: ${RSA_PRIVATE_KEY}
       RSA_PUBLIC_KEY: ${RSA_PUBLIC_KEY}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      # Documentacao viva ligada so aqui: em producao o padrao e desligado.
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
       LOG_PSEUDONYM_SALT: ${LOG_PSEUDONYM_SALT:-}
       ADMIN_ENABLED: ${ADMIN_ENABLED:-false}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      # De qual endereço o site fala com este serviço.
+      #
+      # É o que separa um visitante do outro no limite de tentativas de login.
+      # Sem isto, toda tentativa chega do mesmo lugar (o site) e divide a mesma
+      # cota: dez senhas erradas de um desconhecido trancam a vendedora por um
+      # minuto, e repetir a cada minuto a mantém fora do painel. Custa dez
+      # requisições e não exige conta nenhuma.
+      #
+      # Só o endereço listado aqui tem o X-Forwarded-For lido. De qualquer outra
+      # origem vale o endereço da conexão, senão bastaria mandar o cabeçalho
+      # para escolher a própria cota e o limite deixaria de existir.
+      APP_RATE_LIMIT_TRUSTED_PROXIES: ${APP_RATE_LIMIT_TRUSTED_PROXIES:-172.28.0.10}
+      # Quantos proxies existem entre o visitante e este serviço: 1 com o site
+      # na frente, 2 quando há um túnel ou CDN antes dele.
+      APP_RATE_LIMIT_TRUSTED_HOPS: ${APP_RATE_LIMIT_TRUSTED_HOPS:-1}
     ports:
-      - "${AUTH_PORT:-8080}:8080"
+      # Em 127.0.0.1, como os bancos: em desenvolvimento a API é alcançada
+      # pelo site, e publicá-la em todas as interfaces a deixa disponível
+      # para qualquer máquina da rede local, sem que nada peça isso.
+      - "127.0.0.1:${AUTH_PORT:-8080}:8080"
     depends_on:
       auth-db:
         # `service_started` só garante que o container subiu. Com `service_healthy`
@@ -112,10 +132,12 @@ services:
       JWT_JWKS_URI: http://auth-service:8080/.well-known/jwks.json
       JWT_ISSUER: ${JWT_ISSUER:-auth-service}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      # Documentacao viva ligada so aqui: em producao o padrao e desligado.
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
       LOG_PSEUDONYM_SALT: ${LOG_PSEUDONYM_SALT:-}
       UPLOADS_DIR: /var/florescer/uploads
     ports:
-      - "${PRODUCT_PORT:-8081}:8081"
+      - "127.0.0.1:${PRODUCT_PORT:-8081}:8081"
     volumes:
       # As imagens ficam fora do container. Sem isto, todo produto cadastrado
       # perde a foto no próximo deploy, e a coluna no banco passa a apontar para
@@ -137,15 +159,34 @@ services:
 
   frontend:
     build:
-      context: ./florescer-frontend
+      context: ./florescer-web
+      args:
+        # Sao nomes de servico da rede do Compose, iguais em qualquer ambiente.
+        # Precisam ser argumento de build porque o Next resolve o destino dos
+        # rewrites na hora do build; passa-los so no environment nao teria efeito
+        # nenhum, e a falha seria silenciosa.
+        PRODUCT_API: http://product-service:8081
+        AUTH_API: http://auth-service:8080
+    environment:
+      # Repetidos aqui porque a renderizacao no servidor tambem os usa, agora em
+      # runtime.
+      PRODUCT_API: http://product-service:8081
+      AUTH_API: http://auth-service:8080
+      # Endereco publico da loja, usado pelo sitemap, pelo robots e pela previa
+      # do link compartilhado. Em desenvolvimento e o proprio localhost.
+      SITE_URL: ${SITE_URL:-http://localhost:3000}
     ports:
-      - "${FRONTEND_PORT:-3000}:80"
+      - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
       auth-service:
         condition: service_healthy
       product-service:
         condition: service_healthy
-    networks: [florescer]
+    networks:
+      florescer:
+        # Endereço fixo porque o auth-service confia neste, e só neste, para ler
+        # o X-Forwarded-For. Ver APP_RATE_LIMIT_TRUSTED_PROXIES.
+        ipv4_address: 172.28.0.10
 
 # Volumes nomeados: sem eles o banco vive na camada gravável do container e some
 # junto com ele no primeiro `docker compose down`.
@@ -159,3 +200,14 @@ volumes:
 networks:
   florescer:
     driver: bridge
+    # Sub-rede fixa, e não a que o Docker sortear.
+    #
+    # O limite de tentativas de login precisa saber de qual endereço o site fala
+    # com o auth-service, para distinguir um visitante do outro. Com endereço
+    # sorteado a cada `up`, essa configuração viraria um valor que dá certo hoje
+    # e erra amanhã, e o erro é silencioso: o limite volta a ser uma cota só
+    # para o mundo inteiro, e ninguém percebe até a vendedora não conseguir
+    # entrar.
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

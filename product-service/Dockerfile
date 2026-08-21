@@ -3,7 +3,16 @@
 # --- build ---------------------------------------------------------------
 # Usa o Maven Wrapper versionado no repo: a versão do Maven é a mesma aqui,
 # na máquina do dev e no CI.
-FROM eclipse-temurin:17-jdk-alpine AS build
+# Noble, e nao Alpine: as imagens Alpine do Temurin existem **apenas para
+# amd64**, e o build multiplataforma falha com "no match for platform in
+# manifest" antes mesmo de compilar. Medido no manifesto:
+#
+#   17-jdk-alpine  linux/amd64
+#   17-jdk-noble   linux/amd64, linux/arm, linux/arm64, ...
+#
+# Custa 25 MB a mais na imagem final, e compra a possibilidade de rodar em
+# maquina ARM, que e o que as nuvens oferecem de graca.
+FROM eclipse-temurin:17-jdk-noble AS build
 WORKDIR /build
 
 # Copiar só o descritor primeiro faz o Docker reaproveitar o cache de dependências
@@ -17,7 +26,7 @@ RUN ./mvnw --batch-mode --no-transfer-progress -DskipTests package
 
 # --- runtime -------------------------------------------------------------
 # JRE (não JDK) reduz superfície de ataque e tamanho da imagem.
-FROM eclipse-temurin:17-jre-alpine AS runtime
+FROM eclipse-temurin:17-jre-noble AS runtime
 WORKDIR /app
 
 # Nunca roda como root.

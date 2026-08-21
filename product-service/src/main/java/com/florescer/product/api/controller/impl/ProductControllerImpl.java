@@ -1,6 +1,7 @@
 package com.florescer.product.api.controller.impl;
 
 import java.net.URI;
+import java.math.BigDecimal;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -18,6 +19,10 @@ import com.florescer.product.api.dto.response.ProductGetResponse;
 import com.florescer.product.api.dto.response.ProductListResponse;
 import com.florescer.product.api.utils.PageableFactory;
 import com.florescer.product.api.utils.ProductMapper;
+import com.florescer.product.domain.enums.Difficulty;
+import com.florescer.product.domain.enums.Environment;
+import com.florescer.product.domain.enums.Light;
+import com.florescer.product.domain.model.ProductFilter;
 import com.florescer.product.api.utils.SwaggerConstants;
 import com.florescer.product.config.SecurityConfig;
 import com.florescer.product.domain.service.ProductService;
@@ -67,9 +72,18 @@ public class ProductControllerImpl implements ProductController {
     public ResponseEntity<Page<ProductListResponse>> listAll(
     	    @RequestParam(defaultValue = "0") int page,
     	    @RequestParam(defaultValue = "10") int size,
-    	    @RequestParam(defaultValue = "name") String[] sort) {
+    	    @RequestParam(defaultValue = "name") String[] sort,
+    	    @RequestParam(required = false) Light light,
+    	    @RequestParam(required = false) Boolean petSafe,
+    	    @RequestParam(required = false) Environment environment,
+    	    @RequestParam(required = false) Difficulty difficulty,
+    	    @RequestParam(required = false) BigDecimal maxPrice,
+    	    @RequestParam(required = false) Boolean onlyAvailable) {
+
     	    Pageable pageable = PageableFactory.of(page, size, sort);
-        return ResponseEntity.ok(ProductMapper.toListResponse(service.getListProduct(pageable)));
+    	    ProductFilter filtro = new ProductFilter(light, petSafe, environment, difficulty, maxPrice, onlyAvailable);
+
+        return ResponseEntity.ok(ProductMapper.toListResponse(service.getListProduct(filtro, pageable)));
     }
 
 	@Override

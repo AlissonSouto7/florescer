@@ -15,7 +15,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 
+import com.florescer.product.domain.enums.Difficulty;
+import com.florescer.product.domain.enums.Environment;
+import com.florescer.product.domain.enums.Light;
 import com.florescer.product.domain.enums.Status;
+import com.florescer.product.domain.enums.Watering;
 import com.florescer.product.domain.model.NewProduct;
 import com.florescer.product.domain.model.ProductChanges;
 import com.florescer.product.domain.exception.custom.FileStorageException;
@@ -119,11 +123,14 @@ class TransactionalFileIoTest extends AbstractIntegrationTest {
                 "image", "original.png", MediaType.IMAGE_PNG_VALUE, PNG);
         return service.createProduct(new NewProduct(
                 "Produto", "Flor", "Descrição", new BigDecimal("10.00"), 5,
-                "Regar", true, Status.ATIVO), imagem).getId();
+                "Regar", true, Status.ATIVO,
+                40, Light.MEIA_SOMBRA, Watering.SEMANAL, true,
+                Environment.INTERNO, Difficulty.FACIL, true), imagem).getId();
     }
 
     private ProductChanges patchVazio() {
-        return new ProductChanges(null, null, null, null, null, null, null, null);
+        return new ProductChanges(null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null);
     }
 
     private Path arquivo(String nome) {

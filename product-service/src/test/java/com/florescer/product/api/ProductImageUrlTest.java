@@ -103,7 +103,9 @@ class ProductImageUrlTest extends AbstractIntegrationTest {
     private String criarProduto() throws Exception {
         String json = """
                 {"name":"Rosa","type":"Flor","description":"Bonita","price":29.9,
-                 "quantityStock":5,"careRequirements":"Regar","availability":true,"status":"ATIVO"}
+                 "quantityStock":5,"careRequirements":"Regar","availability":true,"status":"ATIVO",
+                 "heightCm":40,"light":"MEIA_SOMBRA","watering":"SEMANAL","petSafe":true,
+                 "environment":"INTERNO","difficulty":"FACIL","includesPot":true}
                 """;
 
         String corpo = mockMvc.perform(multipart("/v1/product")

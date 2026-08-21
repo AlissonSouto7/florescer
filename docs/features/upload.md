@@ -4,7 +4,7 @@ Recebe, valida e serve as fotos dos produtos.
 
 **Onde fica**: `product-service`. Escrita junto com o produto (`POST` e `PATCH` de `/v1/product`), leitura em `/uploads/**`.
 **Status**: funcional e endurecido, com uma limitação de arquitetura em aberto.
-**Última revisão**: 11/08/2026.
+**Última revisão**: 20/08/2026.
 
 ## Por que este documento existe separado
 
@@ -65,7 +65,7 @@ O `U-11` só apareceu ao rodar `docker compose up` de verdade: a suíte inteira 
 
 | id | sev | o que é | por que continua aberto |
 |---|---|---|---|
-| U-9 | médio | as imagens são servidas **pela mesma origem da API**. Um arquivo enviado por alguém e servido em `florescer.com/uploads/x` compartilha origem com a aplicação, então uma falha futura de tipo ou de escape roda no contexto dela, com acesso ao `localStorage` | corrigir é servir de um domínio separado (issue #23). Depende de infraestrutura que ainda não existe. Enquanto isso, a defesa é a detecção por magic bytes e o `X-Content-Type-Options: nosniff` do nginx |
+| U-9 | médio | as imagens são servidas **pela mesma origem da API**. Um arquivo enviado por alguém e servido em `florescer.com/uploads/x` compartilha origem com a aplicação, então uma falha futura de tipo ou de escape roda no contexto dela, com acesso ao `localStorage` | corrigir é servir de um domínio separado (issue #23). Depende de infraestrutura que ainda não existe. Enquanto isso, a defesa é a detecção por magic bytes e o `X-Content-Type-Options: nosniff`, hoje enviado pelo próprio Next |
 | U-10 | baixo | não há varredura antivírus nem limite de dimensão da imagem | um PNG válido de 20000x20000 passa no teste de tipo e consome memória ao ser processado. Hoje nada processa a imagem além de gravá-la, então o risco é de disco, coberto pelo limite de 10MB |
 
 ### Verificado e OK
@@ -83,6 +83,20 @@ O `U-11` só apareceu ao rodar `docker compose up` de verdade: a suíte inteira 
 | `ImageStorageServiceTest` (5) | traversal; arquivo que não é imagem; nome original influenciando o destino |
 | `TransactionalFileIoTest` (4) | arquivo órfão após rollback; imagem apagada de produto que sobreviveu |
 | `ProductImageUrlTest` (4) | URL divergente entre endpoints; imagem inalcançável para anônimo |
+
+### Verificado na auditoria de 20/08/2026
+
+Três arquivos enviados de propósito contra a stack de pé, autenticado como ADMIN:
+
+| Arquivo | Resultado |
+|---|---|
+| SVG com `<script>` e `onload` | `400` |
+| HTML puro com extensão `.png` e `Content-Type: image/png` | `400` |
+| **poliglota**: assinatura PNG seguida de `<script>` | `201`, aceito |
+
+O poliglota passa porque a detecção olha os bytes iniciais, e eles são de um PNG de verdade. Ele **não é explorável do jeito que costuma ser**, e isso foi medido em vez de suposto: o arquivo é servido como `image/png` com `X-Content-Type-Options: nosniff`, tanto direto quanto pelo domínio do site, então o navegador não o interpreta como HTML. Some com o `nosniff` e a história muda, que é o motivo de ele estar na lista do que não pode sair.
+
+Vale registrar o limite: quem envia precisa ser ADMIN, ou seja, a própria vendedora. O risco real aqui não é um estranho, é um arquivo aceito hoje que vira problema quando alguma outra defesa cair.
 
 ### O que NÃO está coberto
 
@@ -125,6 +139,8 @@ SELECT id, name FROM tb_products WHERE image_path IS NULL OR image_path = '';
 
 | Data | O que mudou |
 |---|---|
-| 11/08/2026 | volume nomeado no compose, `nosniff` no nginx, permissão do volume corrigida (U-11) |
+| 20/08/2026 | auditoria de upload: SVG e HTML disfarçado recusados, poliglota aceito mas neutralizado pelo `nosniff` |
+| 11/08/2026 | volume nomeado no compose, permissão do volume corrigida (U-11) |
+| 19/08/2026 | imagens passaram a ser servidas pelo domínio do frontend, por rewrite; o frontend estático em nginx foi substituído pelo Next |
 | 10/08/2026 | I/O de disco movida para depois do commit |
 | 09/08/2026 | nome descartado, detecção por magic bytes, caminho confinado, rota unificada |

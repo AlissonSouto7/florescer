@@ -1,18 +1,10 @@
-# GitFlow: como o código anda neste projeto
+# GitFlow
 
-Este documento explica o modelo de branches adotado no Florescer, por que ele existe, e como comparar com as alternativas. Se te perguntarem "que fluxo de git vocês usam?", a resposta boa não é o nome do fluxo, é o motivo da escolha.
+O modelo de branches do Florescer, e por que este e não outro.
 
-## O problema que qualquer fluxo de branch resolve
+Um fluxo de branch responde três perguntas: onde o código novo nasce, onde ele fica enquanto amadurece, e o que exatamente está em produção agora. Sem isso, a branch de produção vira uma fila onde código pronto e código pela metade se misturam.
 
-Duas pessoas mexendo no mesmo código ao mesmo tempo geram conflito. Mas o problema maior não é conflito de texto, é conflito de estado: se todo mundo commita direto na branch que vai pra produção, qualquer commit pela metade pode ir pro ar. A branch vira uma fila onde código pronto e código quebrado se misturam.
-
-Um fluxo de branch responde três perguntas:
-
-1. Onde o código novo nasce?
-2. Onde ele fica enquanto amadurece?
-3. O que exatamente está em produção agora?
-
-## O modelo do Florescer
+## O modelo
 
 Duas branches de vida longa, que nunca são deletadas:
 
@@ -31,7 +23,7 @@ E três tipos de branch de vida curta, criadas e deletadas o tempo todo:
 
 ### Por que a release branch volta para os dois lugares
 
-Esse é o detalhe que quase todo mundo erra ao explicar. Quando você corrige um bug na `release/1.2.0`, essa correção precisa ir pra `main` (senão produção não recebe) **e** pra `develop` (senão o próximo release nasce com o bug de volta). O mesmo vale para hotfix. Esquecer o merge de volta pra `develop` é a causa clássica de "esse bug já não tinha sido corrigido?".
+Quando você corrige um bug na `release/1.2.0`, essa correção precisa ir pra `main` (senão produção não recebe) **e** pra `develop` (senão o próximo release nasce com o bug de volta). O mesmo vale para hotfix. Esquecer o merge de volta pra `develop` é a causa clássica de "esse bug já não tinha sido corrigido?".
 
 ### O ciclo completo, na prática
 
@@ -69,7 +61,7 @@ docs(workflow): explain branch protection rules
 chore(ci): bump testcontainers to 1.21.4
 ```
 
-Não é preciosismo. O tipo do commit alimenta a geração automática de release notes e permite responder "o que mudou de comportamento entre v1.0 e v1.1?" filtrando por `feat` e `fix`. Descrição no imperativo ("add", não "added"/"adding") porque a mensagem completa o comando: *este commit vai* "add rate limit".
+O tipo alimenta a geração de release notes e permite responder "o que mudou de comportamento entre v1.0 e v1.1?" filtrando por `feat` e `fix`. A descrição vai no imperativo ("add", não "added") porque a mensagem completa a frase "este commit vai...".
 
 ## Versionamento: SemVer
 
@@ -81,9 +73,9 @@ Uma tag `vX.Y.Z` na `main` marca cada release.
 
 A tag não é decoração: é ela que dispara o deploy de produção no pipeline, e é ela que permite fazer rollback para um ponto exato.
 
-## As alternativas (e quando cada uma ganha)
+## Alternativas consideradas
 
-Saber comparar vale mais do que saber executar. GitFlow **não** é o padrão da indústria hoje; foi criado em 2010 para software com releases versionados e instalados pelo cliente.
+GitFlow não é o padrão da indústria hoje. Foi criado em 2010, para software com releases versionados e instalados pelo cliente.
 
 ### GitHub Flow
 
@@ -105,7 +97,7 @@ Perde quando: a suíte de testes não é confiável. Sem rede de proteção, tru
 
 O Florescer tem release versionado, um ambiente de staging antes de produção, e um gate de aprovação manual pra produção. GitFlow modela exatamente isso: a `release/*` é o que existe em staging, a tag na `main` é o que existe em produção.
 
-Se este projeto virasse deploy contínuo com feature flags, GitHub Flow seria a escolha melhor, e trocar seria o certo. A resposta honesta em entrevista é essa: *o fluxo serve ao ritmo de release, não o contrário*.
+Se o projeto virasse deploy contínuo com feature flags, GitHub Flow passaria a ser a escolha certa. O fluxo serve ao ritmo de release, não o contrário.
 
 ## Erros comuns (que este projeto já cometeu)
 

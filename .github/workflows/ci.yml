@@ -54,6 +54,98 @@ jobs:
             ${{ matrix.service }}/target/site/jacoco/
           retention-days: 7
 
+  frontend:
+    name: build (florescer-web)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: florescer-web
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: florescer-web/package-lock.json
+
+      # ci, e não install: instala exatamente o que está no lockfile e falha se
+      # ele divergir do package.json, em vez de resolver versões novas por conta.
+      - name: Install
+        run: npm ci
+
+      - name: Test and coverage gate
+        run: npm run test:coverage
+
+      # O build é verificação, não só empacotamento: o TypeScript roda em modo
+      # estrito e reprova tipo quebrado que os testes não alcançariam.
+      - name: Build
+        run: npm run build
+        env:
+          # O build não fala com a API, mas o Next congela o destino do rewrite
+          # de /uploads neste momento. Um valor previsível aqui evita depender do
+          # que estiver no ambiente do runner.
+          PRODUCT_API: http://product-service:8081
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: coverage-florescer-web
+          path: florescer-web/coverage/
+          retention-days: 7
+
+  # O CI não construía imagem, e por isso um Dockerfile quebrado só era
+  # descoberto pelo CD, depois do merge, com a develop já vermelha. Foi o que
+  # aconteceu com a base Alpine do Temurin, que não existe para ARM.
+  #
+  # Aqui a imagem é construída para as duas arquiteturas e **não é publicada**.
+  # Publicar é papel do CD, a partir da branch que alimenta cada ambiente.
+  #
+  # Cada arquitetura roda no seu próprio processador, e não sob emulação. A
+  # primeira versão usava QEMU no runner x86 para produzir a imagem ARM, e o
+  # custo foi medido: o build do frontend passou de uma hora e precisou ser
+  # cancelado, contra 42s do mesmo build nativo. Emular um `npm ci` e um
+  # `next build` instrução a instrução é lento a ponto de inviabilizar o gate.
+  #
+  # Os runners `ubuntu-24.04-arm` são gratuitos em repositório público, que é o
+  # caso deste. Em repositório privado o label não funciona, e aí a saída seria
+  # voltar ao QEMU só no CD.
+  image:
+    name: image (${{ matrix.service }}, ${{ matrix.plataforma.nome }})
+    runs-on: ${{ matrix.plataforma.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [auth-service, product-service, florescer-web]
+        plataforma:
+          - nome: amd64
+            runner: ubuntu-latest
+            docker: linux/amd64
+          - nome: arm64
+            runner: ubuntu-24.04-arm
+            docker: linux/arm64
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Build
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: ${{ matrix.service }}
+          platforms: ${{ matrix.plataforma.docker }}
+          # Sem push: aqui o objetivo é saber se constrói, não publicar.
+          push: false
+          # Cache por arquitetura: as camadas de uma não servem para a outra, e
+          # sem a chave separada uma sobrescreve a da outra a cada execução.
+          cache-from: type=gha,scope=${{ matrix.service }}-${{ matrix.plataforma.nome }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}-${{ matrix.plataforma.nome }}
+
   secret-scan:
     name: secret scan
     runs-on: ubuntu-latest

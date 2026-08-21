@@ -4,7 +4,11 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.florescer.product.domain.enums.Difficulty;
+import com.florescer.product.domain.enums.Environment;
+import com.florescer.product.domain.enums.Light;
 import com.florescer.product.domain.enums.Status;
+import com.florescer.product.domain.enums.Watering;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -77,6 +81,39 @@ public class Product {
 
 	@Column(name = "image_path", nullable = false)
 	private String imagePath;
+
+	// Os campos abaixo respondem o que quem compra pergunta antes de fechar
+	// negócio. Aceitam nulo porque foram acrescentados a uma tabela que já tinha
+	// linhas: inventar altura ou luminosidade para as plantas antigas colocaria
+	// informação falsa na vitrine. A API exige todos nos cadastros novos.
+
+	/** Altura aproximada, em centímetros. A pergunta número um de quem compra. */
+	@Column(name = "height_cm")
+	private Integer heightCm;
+
+	@Enumerated(EnumType.STRING)
+	@Column(length = 20)
+	private Light light;
+
+	@Enumerated(EnumType.STRING)
+	@Column(length = 30)
+	private Watering watering;
+
+	/** Se pode conviver com gato ou cachorro. Segurança, não conveniência. */
+	@Column(name = "pet_safe")
+	private Boolean petSafe;
+
+	@Enumerated(EnumType.STRING)
+	@Column(length = 20)
+	private Environment environment;
+
+	@Enumerated(EnumType.STRING)
+	@Column(length = 10)
+	private Difficulty difficulty;
+
+	/** Se o preço já inclui o vaso, ou se a planta vai só com o torrão. */
+	@Column(name = "includes_pot")
+	private Boolean includesPot;
 
 	/** Quando o produto entrou no catálogo. Preenchido uma única vez. */
 	@Column(name = "created_at", nullable = false, updatable = false)

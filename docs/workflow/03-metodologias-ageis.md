@@ -1,53 +1,16 @@
-# Kanban, Scrum e como empresas realmente organizam o trabalho
+# Como o trabalho é organizado
 
-Este documento explica o método de trabalho do Florescer e o vocabulário ágil que aparece em entrevista. A parte mais útil não é decorar a cerimônia, é entender o problema que cada uma resolve.
+Kanban com board no GitHub Projects. Sem sprint.
 
-## O ponto de partida: o manifesto ágil
+## Por que Kanban e não Scrum
 
-Em 2001, dezessete pessoas escreveram quatro valores em reação ao modelo em cascata (levantar todos os requisitos → projetar tudo → construir tudo → testar tudo → entregar, com meses entre as etapas). O problema do cascata é que o requisito envelhece antes da entrega, e o erro só aparece no fim, quando corrigir é caro.
+Scrum organiza o trabalho em ciclos de duração fixa (a sprint), com escopo combinado no início e revisado no fim. Funciona quando há um time para sincronizar e um ritmo de entrega previsível a sustentar.
 
-Os quatro valores, na formulação original: *indivíduos e interações* acima de processos e ferramentas; *software funcionando* acima de documentação abrangente; *colaboração com o cliente* acima de negociação de contrato; *responder a mudanças* acima de seguir um plano.
+Kanban não tem caixa de tempo. O que se limita é a quantidade de trabalho simultâneo (o WIP), e a tarefa flui quando fica pronta.
 
-O detalhe que quase todo mundo esquece ao citar: a frase termina com "*ou seja, mesmo havendo valor nos itens à direita, valorizamos mais os itens à esquerda*". Documentação não é inimiga. Plano não é inimigo. A prioridade é que mudou.
+Aqui o trabalho chega por descoberta, não por planejamento de duas semanas: uma varredura de segurança abre cinco issues que não existiam ontem. Um ciclo de escopo fixo seria replanejado toda semana, o que é o mesmo que não ter ciclo.
 
-Ágil não é ausência de processo. É processo com ciclo curto de feedback.
-
-## Scrum
-
-Scrum organiza o trabalho em **sprints**: períodos fixos (normalmente duas semanas) ao fim dos quais existe algo entregável.
-
-**Papéis:**
-- *Product Owner*: decide a prioridade, representa o negócio, é dono do backlog.
-- *Scrum Master*: cuida do processo e remove impedimentos. Não é chefe do time.
-- *Time de desenvolvimento*: quem constrói. Se auto-organiza.
-
-**Cerimônias:**
-- *Sprint Planning*: o time escolhe o que cabe na sprint.
-- *Daily* (15 min): o que fiz, o que farei, o que me trava. O valor real está no terceiro item; os dois primeiros o board já mostra.
-- *Sprint Review*: demonstração do que ficou pronto, para quem pediu.
-- *Retrospectiva*: o que melhorar no **processo**. É a cerimônia mais valiosa e a primeira que os times abandonam quando apertam o prazo.
-- *Refinement*: quebrar e estimar itens do backlog antes de entrarem numa sprint.
-
-**Estimativa por story points**: em vez de estimar horas (que todo mundo erra), estima-se complexidade relativa, geralmente em Fibonacci (1, 2, 3, 5, 8, 13). O time descobre com o tempo quantos pontos consegue entregar por sprint (a *velocity*) e passa a usar isso para planejar. O ponto não é acertar a estimativa, é ter uma unidade estável de comparação.
-
-Scrum ganha quando o trabalho dá para ser planejado em blocos e existe alguém do negócio pedindo entregas previsíveis.
-
-## Kanban
-
-Kanban vem do sistema de produção da Toyota. Não tem sprint, não tem papel obrigatório, não tem estimativa obrigatória. Tem quatro práticas:
-
-1. **Visualizar o fluxo.** O board mostra cada trabalho e em que etapa ele está.
-2. **Limitar o trabalho em progresso (WIP limit).** Cada coluna tem um teto de cartões.
-3. **Gerenciar o fluxo.** A métrica principal é *lead time*: quanto tempo um item leva da entrada até o fim.
-4. **Melhorar continuamente** com base no que o fluxo mostra.
-
-**O WIP limit é o coração do Kanban e o mais mal compreendido.** A intuição diz que fazer cinco coisas ao mesmo tempo entrega mais rápido. Acontece o contrário: cinco itens em progresso significa cinco itens *incompletos*, cada troca de contexto custa tempo, e nada chega ao fim. Limitar o WIP força terminar antes de começar. Quando a coluna está cheia, a resposta certa não é "abro mais uma", é "vou ajudar a destravar o que está lá".
-
-Kanban ganha quando o trabalho chega de forma imprevisível (suporte, bugs, manutenção) ou quando o time é pequeno demais para sustentar as cerimônias do Scrum.
-
-Na prática, muitas empresas usam **Scrumban**: board e WIP limit do Kanban, com daily e retrospectiva do Scrum, sem estimativa em pontos.
-
-## Como o Florescer trabalha
+A diferença em uma linha: Scrum fixa o tempo e ajusta o escopo; Kanban não fixa tempo e limita o trabalho em andamento.
 
 Kanban, com board em GitHub Projects. Time de uma pessoa não sustenta cerimônia de Scrum, e o trabalho aqui chega por descoberta (uma análise de segurança gera N tarefas de tamanhos muito diferentes), o que combina melhor com fluxo contínuo do que com sprint fechada.
 
@@ -96,24 +59,16 @@ issue #12 "Configurar CORS nos dois serviços"
 
 Escrever `Closes #12` no corpo do PR faz o GitHub fechar a issue automaticamente no merge. Isso não é conveniência: é o que permite, meses depois, partir de uma linha de código e chegar na discussão que a originou.
 
-## Métricas que importam (e as que enganam)
+## Métricas
 
-Úteis:
-- **Lead time**: da criação da issue até o merge. Mede o sistema inteiro.
-- **Cycle time**: do início do trabalho até o merge. Mede a execução.
-- **Throughput**: itens concluídos por semana.
+O que este projeto acompanha:
 
-As quatro métricas DORA, que a pesquisa do livro *Accelerate* correlacionou com performance de entrega: frequência de deploy, lead time para mudança, taxa de falha de mudança e tempo de restauração de serviço.
+- **Issues fechadas por entrega**, para saber o tamanho real de uma release.
+- **Tempo entre abrir e fechar uma issue**, que revela tarefa grande demais.
+- **Cobertura medida**, com piso obrigatório no CI.
 
-Enganosas:
+O que não acompanha, e por quê:
+
 - **Linhas de código**: mais código costuma ser pior, não melhor.
-- **Story points por pessoa**: vira competição e inflação de estimativa.
-- **Cobertura de teste como meta**: 100% de cobertura com asserções fracas é pior que 60% com testes que realmente verificam, porque cria confiança falsa.
-
-## O que responder numa entrevista
-
-Se perguntarem "você já trabalhou com metodologia ágil?", a resposta fraca é listar cerimônias. A resposta forte descreve o fluxo concreto e o porquê das escolhas:
-
-> "Uso Kanban com board no GitHub Projects. Cada tarefa vira issue com critério de aceite, a branch carrega o número da issue, e o PR fecha ela automaticamente. Mantenho WIP de 1 em progresso porque trabalho sozinho e o custo de troca de contexto é alto. Não uso sprint porque o trabalho chega por descoberta, não por planejamento de duas semanas. A Definition of Done exige teste vermelho antes do verde e CI verde, então 'pronto' não é opinião."
-
-E se perguntarem a diferença entre Scrum e Kanban: Scrum é *timeboxed* (o tempo é fixo, o escopo se ajusta), Kanban é *flow-based* (não tem caixa de tempo, o que se limita é a quantidade de trabalho simultâneo).
+- **Story points**: sem time, estimar não informa nada que a issue já não diga.
+- **Cobertura como meta**: 100% com asserções fracas é pior que 60% com testes que verificam de verdade, porque cria confiança falsa.

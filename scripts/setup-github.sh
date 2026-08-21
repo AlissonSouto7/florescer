@@ -36,6 +36,13 @@ if [ "$STEP" = "protection" ]; then
     "contexts": [
       "build (auth-service)",
       "build (product-service)",
+      "build (florescer-web)",
+      "image (auth-service, amd64)",
+      "image (auth-service, arm64)",
+      "image (product-service, amd64)",
+      "image (product-service, arm64)",
+      "image (florescer-web, amd64)",
+      "image (florescer-web, arm64)",
       "secret scan",
       "analyze (java-kotlin)",
       "analyze (javascript-typescript)"
@@ -235,10 +242,20 @@ gh api -X PUT "repos/$REPO/environments/production" \
 {
   "wait_timer": 0,
   "reviewers": [{"type": "User", "id": $USER_ID}],
-  "deployment_branch_policy": {"protected_branches": true, "custom_branch_policies": false}
+  "deployment_branch_policy": {"protected_branches": false, "custom_branch_policies": true}
 }
 JSON
-echo "    production exige aprovação manual"
+
+# "protected_branches" recusa deploy disparado por TAG, porque tag nao e uma
+# branch protegida. Como o CD publica em producao a partir da tag (v0.1.0), a
+# regra bloqueava exatamente o unico gatilho que ela precisava permitir: o job
+# falhava em 15 segundos, antes de executar qualquer passo e sem mensagem no log.
+#
+# Com politica customizada, os padroes abaixo dizem o que pode publicar.
+for POLICY in '{"name":"v*","type":"tag"}' '{"name":"main","type":"branch"}'; do
+  gh api -X POST "repos/$OWNER/$REPO/environments/production/deployment-branch-policies"     --input - >/dev/null <<<"$POLICY" || true
+done
+echo "    production exige aprovação manual, e aceita a tag v* e a main"
 
 echo
 echo "Pronto. Depois do primeiro CI verde, ligue as travas de branch:"

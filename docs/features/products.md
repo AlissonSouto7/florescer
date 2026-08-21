@@ -4,7 +4,7 @@ CRUD de produtos. Leitura pública, escrita restrita a ADMIN.
 
 **Onde fica**: `product-service`, porta 8081, PostgreSQL 16.
 **Status**: funcional, coberto por testes.
-**Última revisão**: 11/08/2026.
+**Última revisão**: 20/08/2026.
 
 ## Endpoints
 
@@ -36,6 +36,26 @@ Leitura pública porque a vitrine precisa funcionar para quem ainda não tem con
 | Schema | `resources/db/migration/V1__create_product_table.sql` |
 
 O domínio não importa DTO da camada `api`: o serviço recebe `NewProduct` e `ProductChanges`. Sem isso, mudar o formato da API forçaria mudança na regra de negócio.
+
+## O que a planta guarda
+
+| Campo | Obrigatório | Para quê |
+|---|---|---|
+| nome, tipo, descrição | sim | identificação na vitrine |
+| preço | sim | `numeric(10,2)` |
+| estoque, disponibilidade, status | sim | controle de venda |
+| cuidados | sim | texto livre, para o que não cabe em campo estruturado |
+| **altura (cm)** | sim | a pergunta número um de quem compra |
+| **luminosidade** | sim | `SOL_PLENO`, `MEIA_SOMBRA`, `SOMBRA` |
+| **rega** | sim | `DIARIA` a `MENSAL` |
+| **segura para animais** | sim | segurança, não conveniência |
+| **ambiente** | sim | `INTERNO`, `EXTERNO`, `AMBOS` |
+| **dificuldade** | sim | `FACIL`, `MEDIO`, `DIFICIL` |
+| **vem com vaso** | sim | muda o preço percebido |
+
+Os sete últimos são obrigatórios **na API** e aceitam nulo **no banco**. Não é inconsistência: adicionar coluna `NOT NULL` numa tabela que já tem linhas obriga a inventar um valor para as existentes, e altura ou luminosidade inventadas apareceriam na vitrine com a mesma cara de informação verdadeira. Planta cadastrada antes da migration não mostra o campo; planta nova nasce completa.
+
+Luminosidade e segurança para animais têm índice, porque são os filtros previstos para a vitrine.
 
 ## Regras e por quê
 
@@ -104,7 +124,7 @@ O domínio não importa DTO da camada `api`: o serviço recebe `NewProduct` e `P
 | `HealthEndpointTest` (12) | Actuator expondo configuração interna |
 | `OpenApiContractTest` (4) | documentação divergindo do que a API faz |
 
-**84 testes, cobertura medida em 83% de linha e 66% de ramo** (11/08/2026).
+**125 testes, cobertura medida em 88% de linha e 70% de ramo** (20/08/2026). O número cobre o serviço inteiro, incluindo os 24 casos dos dados da loja, documentados em [dados-da-loja.md](dados-da-loja.md).
 
 ### O que NÃO está coberto
 
